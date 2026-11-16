@@ -1,906 +1,1477 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Thanksgiving Shape Challenge</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;600&display=swap">
-<style>
-/* Layout: one-screen app. Header + level bar on top, shape tray beside (or below) a free-form build stage. */
-:root {
-    --bg: #FEF3C7;            /* page ground, warm amber */
-    --stage: #FFFBEB;         /* build surface */
-    --stage-dot: #F2B544;
-    --panel: #FFF8E1;         /* tray + level bar */
-    --panel-line: #FCD34D;
-    --card: #FFFFFF;
-    --ink: #451A03;           /* text */
-    --ink-soft: #92400E;
-    --brand: #D97706;         /* header */
-    --brand-deep: #B45309;
-    --accent: #F97316;        /* selection, active tab */
-    --go: #059669;
-    --stop: #DC2626;
-    --sky: #0284C7;
-    --on-dark: #FFFFFF;
-    --shadow: rgba(69, 26, 3, .2);
-    --font-display: 'Fredoka', 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
-    --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-    color-scheme: light;
-}
-html, body { height: 100%; }
-* { box-sizing: border-box; }
-[hidden] { display: none !important; }
-body {
-    margin: 0; display: flex; flex-direction: column; overflow: hidden;
-    background: var(--bg); color: var(--ink);
-    font-family: var(--font-body); font-size: 14px;
-    -webkit-user-select: none; user-select: none;
-}
-button, input { font: inherit; color: inherit; }
-button { cursor: pointer; }
-:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Thanksgiving Pattern Block Builder</title>
+    <!-- 100% Self-Contained Offline-Ready Styles & Web Audio (No external CDNs that school filters block) -->
 
-/* Tactile buttons */
-.btn {
-    font-family: var(--font-display); font-weight: 600; line-height: 1;
-    border: 2px solid transparent; border-radius: 14px; padding: 8px 12px;
-    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-    background: var(--card); color: var(--ink);
-    box-shadow: 0 3px 0 var(--shadow);
-    transition: transform .12s, box-shadow .12s;
-}
-.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 0 var(--shadow); }
-.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--shadow); }
-.btn[disabled] { opacity: .45; cursor: default; transform: none; box-shadow: 0 3px 0 var(--shadow); }
-.btn.go { background: var(--go); color: var(--on-dark); }
-.btn.stop { background: var(--stop); color: var(--on-dark); }
-.btn.sky { background: var(--sky); color: var(--on-dark); }
-.btn.plain { background: var(--card); border-color: var(--panel-line); }
-.btn.ready { animation: pulse 1.2s ease-in-out infinite; }
-@keyframes pulse { 50% { transform: scale(1.08); } }
+    <style>
+        /* Reset & Base Layout (Replaces external Tailwind CDN so school firewalls never block styling) */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-/* Header */
-.top {
-    background: var(--brand); color: var(--on-dark); flex: none;
-    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px;
-    padding-block: 8px;
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
-    padding-right: max(16px, env(safe-area-inset-right, 0px));
-}
-.top h1 { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin: 0; letter-spacing: .3px; }
-.tabs, .actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.tab { background: var(--brand-deep); color: var(--on-dark); }
-.tab[aria-pressed="true"] { background: var(--accent); border-color: var(--on-dark); }
+        body {
+            font-family: 'Trebuchet MS', 'Comic Sans MS', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            background-color: #FEF3C7;
+            color: #451A03;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-/* Level bar */
-.bar {
-    flex: none; background: var(--panel); border-bottom: 2px solid var(--panel-line);
-    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px;
-    padding-block: 6px;
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
-    padding-right: max(16px, env(safe-area-inset-right, 0px));
-}
-.bar .group { display: flex; align-items: center; gap: 6px; }
-.bar label, .bar .lbl { font-family: var(--font-display); font-weight: 600; color: var(--ink-soft); }
-.seg { display: inline-flex; border: 2px solid var(--panel-line); border-radius: 12px; overflow: hidden; background: var(--card); }
-.seg button { border: 0; background: transparent; padding: 6px 12px; font-family: var(--font-display); font-weight: 600; }
-.seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-dark); }
-.bar .btn { padding: 6px 10px; border-radius: 12px; }
-#level-tip { color: var(--ink-soft); }
-#name-input {
-    width: 150px; max-width: 40vw; padding: 6px 10px; border-radius: 12px;
-    border: 2px solid var(--panel-line); background: var(--card);
-    -webkit-user-select: text; user-select: text;
-}
-#progress { margin-left: auto; font-family: var(--font-display); font-weight: 600; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+        /* Header Bar */
+        header {
+            background-color: #D97706;
+            color: #FFFFFF;
+            padding: 8px 14px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.16);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            z-index: 30;
+            flex-shrink: 0;
+        }
 
-/* Workspace */
-.work { flex: 1; min-height: 0; display: flex; }
-.tray {
-    flex: none; width: 250px; background: var(--panel); border-right: 3px solid var(--panel-line);
-    display: flex; flex-direction: column; min-height: 0;
-}
-.tray h2 {
-    margin: 0; padding: 8px 12px; font-family: var(--font-display); font-size: 16px; font-weight: 700;
-    display: flex; justify-content: space-between; align-items: center; gap: 8px;
-    border-bottom: 1px solid var(--panel-line);
-}
-.tray h2 small { font-family: var(--font-body); font-size: 11px; font-weight: 600; color: var(--ink-soft); }
-#parts {
-    flex: 1; min-height: 0; overflow-y: auto; padding: 10px;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-content: start;
-    touch-action: pan-y;
-}
-.part {
-    position: relative; background: var(--card); border: 2px solid var(--panel-line); border-radius: 14px;
-    padding: 6px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px;
-    box-shadow: 0 3px 0 var(--shadow); min-width: 0;
-}
-.part:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--shadow); }
-.part svg { width: 56px; height: 56px; pointer-events: none; }
-.part span.nm { font-family: var(--font-display); font-weight: 600; font-size: 12px; text-align: center; line-height: 1.15; }
-.part .left {
-    position: absolute; top: 4px; right: 4px; min-width: 24px; padding: 2px 5px; border-radius: 10px;
-    background: var(--accent); color: var(--on-dark);
-    font-family: var(--font-display); font-weight: 700; font-size: 12px; text-align: center; font-variant-numeric: tabular-nums;
-}
-.part.done { opacity: .6; }
-.part.done .left { background: var(--go); }
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-.stage {
-    flex: 1; min-width: 0; position: relative; overflow: hidden;
-    background-color: var(--stage);
-    background-image: radial-gradient(var(--stage-dot) 1px, transparent 1px);
-    background-size: 24px 24px;
-}
-#world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
-#ghost { position: absolute; inset: 0; opacity: 0; transition: opacity .3s; pointer-events: none; }
-#ghost.on { opacity: .22; }
-#ghost svg { width: 100%; height: 100%; display: block; overflow: visible; }
-#empty-tip {
-    position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%); width: max-content; max-width: 80%;
-    text-align: center; color: var(--ink-soft); font-family: var(--font-display); font-weight: 600; font-size: 16px;
-    background: var(--card); border: 2px dashed var(--panel-line); border-radius: 14px; padding: 8px 14px; pointer-events: none;
-}
+        .header-title h1 {
+            font-size: clamp(1rem, 2.2vw, 1.45rem);
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
 
-.piece { position: absolute; cursor: grab; touch-action: none; border-radius: 6px; }
-.piece::before { content: ""; position: absolute; inset: -5px; }   /* bigger touch target for tiny shapes */
-.piece svg { position: relative; display: block; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.piece:hover svg { filter: drop-shadow(0 2px 3px var(--shadow)); }
-.piece.drag { cursor: grabbing; }
-.piece.drag svg { filter: drop-shadow(0 6px 6px var(--shadow)); }
-.piece.sel { outline: 2px dashed var(--accent); outline-offset: 3px; }
-.piece:focus-visible { outline: 2px dashed var(--sky); outline-offset: 3px; }
-.piece.wiggle svg { animation: wiggle .35s ease-in-out 4; }
-.piece.count svg { animation: glow .8s ease-in-out infinite; }
-@keyframes wiggle { 25% { transform: rotate(-7deg); } 75% { transform: rotate(7deg); } }
-@keyframes glow { 50% { filter: drop-shadow(0 0 5px var(--sky)) drop-shadow(0 0 2px var(--sky)); } }
+        nav, .action-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
 
-/* Copy This card */
-#target {
-    position: absolute; top: 12px; right: calc(12px + env(safe-area-inset-right, 0px)); width: 200px; z-index: 5;
-    background: var(--card); border: 3px solid var(--accent); border-radius: 16px; padding: 8px;
-    box-shadow: 0 4px 10px var(--shadow); display: flex; flex-direction: column; gap: 6px;
-}
-#target.big { width: min(340px, 70%); }
-#target header { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-family: var(--font-display); font-weight: 700; color: var(--brand-deep); }
-#target header div { display: flex; gap: 4px; }
-#target header button { border: 0; border-radius: 8px; background: var(--bg); padding: 3px 7px; font-weight: 700; }
-#target-pic { background: var(--stage); border: 1px solid var(--panel-line); border-radius: 10px; padding: 4px; }
-#target-pic svg { display: block; width: 100%; height: auto; }
-#target.min #target-pic, #target.min #look-bar { display: none; }
-#target.min { width: auto; }
-#target.gone #target-pic { display: none; }
-#target.gone { width: auto; }
-#memory-note { display: none; font-family: var(--font-display); font-weight: 600; color: var(--ink-soft); }
-#target.gone #memory-note { display: block; }
-#look-bar { height: 6px; border-radius: 3px; background: var(--bg); overflow: hidden; }
-#look-bar i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; }
+        /* Tactile Kid-Friendly Buttons */
+        .btn-kid {
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 700;
+            border-radius: 14px;
+            padding: 6px 12px;
+            font-size: 0.875rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2);
+        }
+        .btn-kid:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.2);
+        }
+        .btn-kid:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+        }
 
-/* Selected-shape toolbar */
-#tools {
-    position: absolute; left: 50%; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 6;
-    max-width: calc(100% - 16px);
-    background: var(--card); border: 2px solid var(--accent); border-radius: 16px; padding: 6px 8px;
-    box-shadow: 0 6px 16px var(--shadow); display: flex; flex-direction: column; align-items: center; gap: 5px;
-}
-#tool-name { font-family: var(--font-display); font-weight: 600; text-align: center; }
-#tool-name b { color: var(--brand-deep); }
-#tools .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; }
-#tools .btn { padding: 7px 9px; border-radius: 11px; background: var(--bg); font-size: 13px; }
-#tools .btn.stop { background: var(--stop); }
+        .tab-active {
+            background-color: #F97316;
+            border: 2px solid #FFFFFF;
+            color: #FFFFFF;
+            box-shadow: 0 0 0 3px #FCD34D, 0 3px 0 rgba(0,0,0,0.2);
+        }
+        .tab-inactive {
+            background-color: #B45309;
+            color: #FEF3C7;
+        }
+        .tab-inactive:hover { background-color: #92400E; }
 
-#toast {
-    position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 8; max-width: 86%;
-    background: var(--ink); color: var(--on-dark); padding: 9px 18px; border-radius: 999px;
-    font-family: var(--font-display); font-weight: 600; font-size: 15px; text-align: center; box-shadow: 0 4px 12px var(--shadow);
-}
-#confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 7; }
+        .btn-sound { background-color: #F59E0B; color: #FFFFFF; }
+        .btn-reset { background-color: #EF4444; color: #FFFFFF; }
+        .btn-done { background-color: #10B981; color: #FFFFFF; }
+        .btn-save { background-color: #0EA5E9; color: #FFFFFF; }
 
-/* Dialog */
-#modal { position: fixed; inset: 0; z-index: 20; background: rgba(69, 26, 3, .45); display: flex; align-items: center; justify-content: center; padding: 16px; }
-#modal .box { background: var(--card); border: 3px solid var(--accent); border-radius: 20px; padding: 20px; max-width: 420px; width: 100%; text-align: center; box-shadow: 0 10px 30px var(--shadow); }
-#modal h3 { font-family: var(--font-display); font-size: 22px; margin: 0 0 6px; text-wrap: balance; }
-#modal p { margin: 0 0 14px; color: var(--ink-soft); font-size: 15px; }
-#modal .choices { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-#modal .choices .btn { font-size: 18px; padding: 12px 18px; background: var(--bg); border-color: var(--panel-line); }
-#modal .choices .btn.num { font-size: 24px; min-width: 62px; justify-content: center; }
-#modal .choices .btn.go { background: var(--go); }
-#modal .choices .btn.stop { background: var(--stop); }
+        /* Main Workspace Split */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
 
-@media (max-width: 760px) {
-    .top h1 { font-size: 17px; }
-    .work { flex-direction: column-reverse; }
-    .tray { width: auto; border-right: 0; border-top: 3px solid var(--panel-line); }
-    .tray h2 { padding: 4px 16px; font-size: 14px; }
-    #parts {
-        display: flex; overflow-x: auto; overflow-y: hidden; touch-action: pan-x; padding-block: 8px 10px;
-        padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
-    }
-    .part { flex: none; width: 88px; }
-    .part svg { width: 44px; height: 44px; }
-    #target { width: 118px; padding: 5px; }
-    #level-tip, .btn .t { display: none; }
-    #empty-tip { font-size: 14px; }
-}
-@media (max-width: 520px) { .top h1 { display: none; } .top { justify-content: center; } }
-@media (prefers-reduced-motion: reduce) { .btn, #ghost { transition: none; } .btn.ready, .piece.wiggle svg, .piece.count svg { animation: none; } }
-</style>
+        @media (min-width: 768px) {
+            main { flex-direction: row; }
+        }
+
+        /* Shapes Palette Sidebar / Bottom Tray */
+        aside {
+            width: 100%;
+            height: 165px;
+            background-color: #FFFBEB;
+            border-top: 4px solid #FCD34D;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 20;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+            order: 2;
+        }
+
+        @media (min-width: 768px) {
+            aside {
+                width: 280px;
+                height: auto;
+                border-top: none;
+                border-right: 4px solid #FCD34D;
+                order: 1;
+            }
+        }
+
+        .tray-header {
+            padding: 8px 12px;
+            background-color: #FDE68A;
+            border-bottom: 1px solid #FCD34D;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .tray-header h2 {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #78350F;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tray-badge {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #92400E;
+            background-color: #FEF3C7;
+            padding: 2px 8px;
+            border-radius: 999px;
+        }
+
+        .parts-tray {
+            flex: 1;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            align-items: center;
+        }
+
+        @media (min-width: 768px) {
+            .parts-tray {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                overflow-x: hidden;
+                overflow-y: auto;
+                align-content: start;
+            }
+        }
+
+        .shape-card {
+            background-color: #FFFFFF;
+            border: 2px solid #FCD34D;
+            border-radius: 16px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            width: 92px;
+            height: 104px;
+            color: #451A03;
+        }
+
+        @media (min-width: 768px) {
+            .shape-card { width: 100%; height: 108px; }
+        }
+
+        .shape-card-preview {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .shape-card-label {
+            font-size: 0.74rem;
+            font-weight: 700;
+            text-align: center;
+            line-height: 1.15;
+        }
+
+        /* Interactive Build Canvas */
+        .stage-bg {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            order: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #FFFBEB;
+            background-image: 
+                radial-gradient(#F59E0B 1px, transparent 1px),
+                radial-gradient(circle at 50% 45%, #FFFBEB 0%, #FEF3C7 75%, #FDE68A 100%);
+            background-size: 24px 24px, 100% 100%;
+            box-shadow: inset 0 4px 20px rgba(180, 83, 9, 0.08);
+        }
+
+        @media (min-width: 768px) {
+            .stage-bg { order: 2; }
+        }
+
+        /* Top Overlay Pills */
+        .stage-top-bar {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .instruction-pill {
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid #FCD34D;
+            padding: 6px 12px;
+            border-radius: 16px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #78350F;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            max-width: 420px;
+        }
+
+        .btn-guide {
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid #FCD34D;
+            color: #78350F;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 0.82rem;
+        }
+
+        /* Target Reference Card ("Copy This!") */
+        .target-card {
+            position: absolute;
+            top: 52px;
+            right: 12px;
+            background: rgba(255, 255, 255, 0.96);
+            border: 4px solid #FB923C;
+            border-radius: 18px;
+            padding: 8px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.14);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 155px;
+            transition: width 0.2s ease;
+        }
+
+        @media (min-width: 768px) {
+            .target-card { width: 195px; top: 56px; right: 16px; }
+        }
+
+        .target-card.zoomed {
+            width: 270px;
+        }
+
+        .target-card-header {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            padding: 0 2px;
+        }
+
+        .target-card-title {
+            font-weight: 800;
+            color: #C2410C;
+            font-size: 0.82rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-zoom {
+            border: none;
+            background: #FFEDD5;
+            color: #9A3412;
+            padding: 2px 7px;
+            border-radius: 8px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .target-preview-box {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: #FFFBEB;
+            border-radius: 12px;
+            border: 1px solid #FDE68A;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+        }
+
+        /* Faint Background Hint Layer */
+        .silhouette-guide {
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            padding: 32px;
+        }
+        .silhouette-guide.visible { opacity: 0.22; }
+
+        .canvas-layer {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Draggable Shapes */
+        .draggable-piece {
+            position: absolute;
+            cursor: grab;
+            transform-origin: center center;
+            transition: filter 0.15s ease;
+            touch-action: none;
+        }
+        .draggable-piece:hover {
+            filter: drop-shadow(0 6px 8px rgba(0,0,0,0.2));
+        }
+        .draggable-piece.dragging {
+            cursor: grabbing;
+            filter: drop-shadow(0 12px 16px rgba(0,0,0,0.28));
+            z-index: 999 !important;
+        }
+        .draggable-piece.selected {
+            outline: 3px dashed #F97316;
+            outline-offset: 6px;
+            border-radius: 16px;
+        }
+
+        /* Floating Selected Item Controls */
+        .item-controls {
+            position: absolute;
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.96);
+            border: 2px solid #FB923C;
+            padding: 7px 12px;
+            border-radius: 18px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 40;
+        }
+
+        .ctrl-divider {
+            width: 2px;
+            height: 22px;
+            background-color: #FDE68A;
+        }
+
+        .toast-box {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #78350F;
+            color: #FFFFFF;
+            padding: 8px 18px;
+            border-radius: 999px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+            font-weight: 700;
+            font-size: 0.9rem;
+            z-index: 50;
+        }
+
+        /* Built-in Celebration Confetti Canvas */
+        #confetti-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .hidden { display: none !important; }
+
+        .parts-tray::-webkit-scrollbar { height: 8px; width: 8px; }
+        .parts-tray::-webkit-scrollbar-track { background: #FEF3C7; border-radius: 10px; }
+        .parts-tray::-webkit-scrollbar-thumb { background: #F59E0B; border-radius: 10px; }
+    </style>
 </head>
 <body>
-<header class="top">
-    <h1>🔷 Thanksgiving Shape Challenge</h1>
-    <nav class="tabs" aria-label="Pictures to build">
-        <button class="btn tab" id="tab-turkey" data-mode="turkey">🦃 Turkey</button>
-        <button class="btn tab" id="tab-pilgrim" data-mode="pilgrim">👒 Pilgrim</button>
-        <button class="btn tab" id="tab-mayflower" data-mode="mayflower">⛵ Mayflower</button>
-    </nav>
-    <div class="actions">
-        <button class="btn plain" id="btn-undo" title="Undo (Ctrl+Z)">↩️ <span class="t">Undo</span></button>
-        <button class="btn stop" id="btn-reset" title="Start over">🔄 <span class="t">Reset</span></button>
-        <button class="btn go" id="btn-done" title="Check my picture">✅ <span class="t">Done!</span></button>
-        <button class="btn sky" id="btn-save" title="Save a picture">📸 <span class="t">Save</span></button>
-        <button class="btn plain" id="btn-sound" title="Sound on or off" aria-pressed="true">🔊</button>
-    </div>
-</header>
 
-<div class="bar">
-    <div class="group">
-        <span class="lbl" id="lvl-lbl">Level</span>
-        <div class="seg" role="group" aria-labelledby="lvl-lbl">
-            <button id="lvl-easy" data-level="easy">Easy</button>
-            <button id="lvl-medium" data-level="medium">Medium</button>
-            <button id="lvl-hard" data-level="hard">Hard</button>
-        </div>
-        <span id="level-tip"></span>
-    </div>
-    <button class="btn plain" id="btn-hint">👻 <span id="hint-text">Show outline</span></button>
-    <button class="btn plain" id="btn-peek" hidden>👀 Peek</button>
-    <div class="group">
-        <label for="name-input">Name</label>
-        <input id="name-input" type="text" maxlength="24" placeholder="Your name" autocomplete="off">
-    </div>
-    <div id="progress" aria-live="polite"></div>
-</div>
+    <canvas id="confetti-canvas"></canvas>
 
-<main class="work">
-    <aside class="tray">
-        <h2><span id="tray-title">Shapes</span> <small>Tap to add</small></h2>
-        <div id="parts"></div>
-    </aside>
-
-    <section class="stage" id="stage" aria-label="Build area">
-        <div id="world"><div id="ghost"></div></div>
-        <div id="empty-tip">Tap a shape to add it. Then drag it into place!</div>
-
-        <div id="target">
-            <header>
-                <span>🎯 Copy this!</span>
-                <div>
-                    <button id="btn-zoom" title="Make the picture bigger or smaller" aria-label="Zoom picture">🔍</button>
-                    <button id="btn-min" title="Hide or show the picture" aria-label="Hide or show picture">▾</button>
-                </div>
-            </header>
-            <div id="target-pic"></div>
-            <div id="look-bar" hidden><i></i></div>
-            <div id="memory-note">Hidden! Build it from memory.</div>
+    <!-- Top Navigation & Mode Selector Bar -->
+    <header>
+        <div class="header-title">
+            <span style="font-size: 1.6rem;" aria-hidden="true">🔷</span>
+            <h1>Thanksgiving Shape Challenge</h1>
         </div>
 
-        <div id="tools" hidden>
-            <div id="tool-name"></div>
-            <div class="row">
-                <button class="btn" data-act="rotL" title="Turn left (Shift+R)">↺ <span class="t">Turn</span></button>
-                <button class="btn" data-act="rotR" title="Turn right (R)">↻ <span class="t">Turn</span></button>
-                <button class="btn" data-act="flip" title="Flip (F)">↔️ <span class="t">Flip</span></button>
-                <button class="btn" data-act="bigger" title="Bigger (+)">➕</button>
-                <button class="btn" data-act="smaller" title="Smaller (-)">➖</button>
-                <button class="btn" data-act="front" title="Bring to front (])">⬆️ <span class="t">Front</span></button>
-                <button class="btn" data-act="back" title="Send to back ([)">⬇️ <span class="t">Back</span></button>
-                <button class="btn stop" data-act="del" title="Remove (Delete)">🗑️</button>
+        <nav aria-label="Build Modes">
+            <button id="tab-turkey" onclick="switchMode('turkey')" class="btn-kid tab-active">
+                <span>🦃</span> <span>Turkey</span>
+            </button>
+            <button id="tab-pilgrim" onclick="switchMode('pilgrim')" class="btn-kid tab-inactive">
+                <span>👒</span> <span>Pilgrim</span>
+            </button>
+            <button id="tab-mayflower" onclick="switchMode('mayflower')" class="btn-kid tab-inactive">
+                <span>⛵</span> <span>Mayflower</span>
+            </button>
+        </nav>
+
+        <div class="action-bar">
+            <button id="btn-sound" onclick="toggleSound()" title="Toggle Sound" class="btn-kid btn-sound">🔊</button>
+            <button onclick="clearStage()" title="Start Over" class="btn-kid btn-reset">
+                <span>🔄</span> <span>Reset</span>
+            </button>
+            <button onclick="celebrateCreation()" title="Celebrate!" class="btn-kid btn-done">
+                <span>🎉</span> <span>Done!</span>
+            </button>
+            <button onclick="downloadSnapshot()" title="Save Picture to Chromebook" class="btn-kid btn-save">
+                <span>📸</span> <span>Save</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Interactive Workspace -->
+    <main>
+        <!-- Parts Palette Sidebar / Bottom Tray -->
+        <aside>
+            <div class="tray-header">
+                <h2 id="tray-title"><span>🔺</span> Shape Blocks</h2>
+                <span class="tray-badge">Click to add</span>
             </div>
-        </div>
+            <div id="parts-container" class="parts-tray"></div>
+        </aside>
 
-        <div id="toast" role="status" aria-live="polite" hidden></div>
-        <canvas id="confetti"></canvas>
-    </section>
-</main>
+        <!-- Interactive Build Canvas Area -->
+        <section id="build-stage" class="stage-bg">
+            <div class="stage-top-bar">
+                <div id="instruction-pill" class="instruction-pill">
+                    <span id="mode-emoji">🦃</span>
+                    <span id="mode-hint">Look at the target picture and recreate it using shapes!</span>
+                </div>
 
-<div id="modal" hidden><div class="box" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <h3 id="modal-title"></h3><p id="modal-text"></p><div class="choices" id="modal-choices"></div>
-</div></div>
+                <button id="btn-guide" onclick="toggleGuide()" class="btn-kid btn-guide">
+                    <span>👻</span> <span id="guide-text">Show Hints</span>
+                </button>
+            </div>
 
-<script>
-/**
- * THANKSGIVING SHAPE CHALLENGE
- * Single file, no libraries. Each picture is described once (parts + slots);
- * the "Copy this!" card, the outline, the tray, the answer check and the saved image all come from that data.
- * Positions are stored in picture units, so a build survives window resizes and reloads.
- */
+            <!-- Target Model Reference Card -->
+            <div id="target-card" class="target-card">
+                <div class="target-card-header">
+                    <span class="target-card-title"><span>🎯</span> Copy This!</span>
+                    <button onclick="toggleTargetZoom()" title="Zoom Target" class="btn-zoom">🔍</button>
+                </div>
+                <div id="target-preview" class="target-preview-box"></div>
+            </div>
 
-// ---------- shape helpers (all drawn centred on 0,0) ----------
-const circ = (r, f, s, sw = 3) => `<circle r="${r}" fill="${f}" stroke="${s}" stroke-width="${sw}"/>`;
-const rect = (w, h, f, s, sw = 3, rx = 0) => `<rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="${rx}" fill="${f}" stroke="${s}" stroke-width="${sw}"/>`;
-const poly = (pts, f, s, sw = 3) => `<polygon points="${pts}" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="round"/>`;
-const path = (d, f, s, sw = 3) => `<path d="${d}" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="round"/>`;
-const feather = (f, s) => poly('0,55 -32,-55 32,-55', f, s);
-const fan = a => [160 + 55 * Math.sin(a * Math.PI / 180), 155 - 55 * Math.cos(a * Math.PI / 180), a];
+            <!-- Optional Faint Ghost Outline on Stage -->
+            <div id="silhouette-guide" class="silhouette-guide"></div>
 
-const KIND = {
-    circle:        { plural: 'circles',      fact: 'round, with 0 corners' },
-    triangle:      { plural: 'triangles',    fact: '3 sides and 3 corners' },
-    rectangle:     { plural: 'rectangles',   fact: '4 sides and 4 square corners' },
-    square:        { plural: 'squares',      fact: '4 equal sides' },
-    trapezoid:     { plural: 'trapezoids',   fact: '4 sides, 2 of them parallel' },
-    'half circle': { plural: 'half circles', fact: '1 straight side and 1 curved side' },
-    oval:          { plural: 'ovals',        fact: 'a stretched circle, 0 corners' }
-};
+            <!-- Layer where placed draggable shapes live -->
+            <div id="canvas-layer" class="canvas-layer"></div>
 
-// part: [id, name, kind, width, height, layer, svg]   slot: [partId, x, y, turn, flipped]
-const MODES = {
-    turkey: {
-        label: 'Turkey', emoji: '🦃', W: 320, H: 300,
-        parts: [
-            ['body', 'Large Circle', 'circle', 116, 116, 6, circ(58, '#7C2D12', '#431407', 3.5)],
-            ['head', 'Medium Circle', 'circle', 64, 64, 8, circ(32, '#9A3412', '#431407', 3.5)],
-            ['wing', 'Half Circle', 'half circle', 30, 60, 7, path('M15,-30 A30 30 0 0 0 15,30 Z', '#9A3412', '#431407')],
-            ['f-red', 'Red Triangle', 'triangle', 64, 110, 2, feather('#DC2626', '#7F1D1D')],
-            ['f-orange', 'Orange Triangle', 'triangle', 64, 110, 2, feather('#F97316', '#9A3412')],
-            ['f-yellow', 'Yellow Triangle', 'triangle', 64, 110, 2, feather('#EAB308', '#854D0E')],
-            ['f-teal', 'Teal Triangle', 'triangle', 64, 110, 2, feather('#0D9488', '#115E59')],
-            ['beak', 'Small Triangle', 'triangle', 24, 18, 11, poly('-12,-9 12,-9 0,9', '#FACC15', '#A16207', 2.5)],
-            ['wattle', 'Red Oval', 'oval', 12, 24, 9, `<ellipse rx="6" ry="12" fill="#EF4444" stroke="#991B1B" stroke-width="2"/>`],
-            ['eye', 'Eye Circle', 'circle', 14, 14, 10, circ(7, '#FFFFFF', '#1E293B', 2) + `<circle r="3" fill="#0F172A"/>`],
-            ['leg', 'Thin Rectangle', 'rectangle', 12, 44, 4, rect(12, 44, '#F59E0B', '#B45309', 2.5, 4)],
-            ['foot', 'Wide Triangle', 'triangle', 36, 20, 5, poly('0,-10 -18,10 18,10', '#F59E0B', '#B45309', 2.5)]
-        ],
-        slots: [
-            ['f-red', ...fan(-60)], ['f-orange', ...fan(-30)], ['f-yellow', ...fan(0)], ['f-orange', ...fan(30)], ['f-teal', ...fan(60)],
-            ['leg', 140, 254], ['leg', 180, 254], ['foot', 140, 274], ['foot', 180, 274],
-            ['body', 160, 185], ['wing', 87, 185], ['wing', 233, 185, 0, true],
-            ['head', 160, 118], ['eye', 149, 110], ['eye', 171, 110], ['wattle', 169, 136], ['beak', 160, 131]
-        ]
-    },
-    pilgrim: {
-        label: 'Pilgrim', emoji: '👒', W: 300, H: 320,
-        parts: [
-            ['coat', 'Large Trapezoid', 'trapezoid', 128, 110, 5, poly('-42,-55 42,-55 64,55 -64,55', '#1E293B', '#0F172A', 3.5)],
-            ['head', 'Peach Circle', 'circle', 68, 68, 6, circ(34, '#FDBA74', '#9A3412')],
-            ['crown', 'Dark Rectangle', 'rectangle', 70, 52, 10, rect(70, 52, '#1E293B', '#0F172A', 3, 4)],
-            ['brim', 'Long Rectangle', 'rectangle', 136, 14, 11, rect(136, 14, '#1E293B', '#0F172A', 3, 6)],
-            ['band', 'White Rectangle', 'rectangle', 70, 12, 11, rect(70, 12, '#F8FAFC', '#94A3B8', 2)],
-            ['buckle', 'Yellow Square', 'square', 20, 20, 12, rect(20, 20, '#FACC15', '#A16207', 2.5)],
-            ['collar', 'White Triangle', 'triangle', 64, 34, 7, poly('-32,-17 32,-17 0,17', '#F8FAFC', '#94A3B8', 2.5)],
-            ['belt', 'Brown Rectangle', 'rectangle', 106, 14, 7, rect(106, 14, '#78350F', '#451A03', 2)],
-            ['arm', 'Sleeve Rectangle', 'rectangle', 44, 20, 3, rect(44, 20, '#334155', '#0F172A', 3, 6)],
-            ['hand', 'Small Circle', 'circle', 20, 20, 4, circ(10, '#FDBA74', '#9A3412', 2.5)],
-            ['legp', 'Short Rectangle', 'rectangle', 22, 28, 3, rect(22, 28, '#334155', '#0F172A')],
-            ['shoe', 'Black Half Circle', 'half circle', 42, 21, 4, path('M-21,10.5 A21 21 0 0 1 21,10.5 Z', '#0F172A', '#0F172A', 1)],
-            ['dot', 'Tiny Circle', 'circle', 8, 8, 9, circ(4, '#0F172A', '#0F172A', 0)],
-            ['smile', 'Red Half Circle', 'half circle', 24, 12, 9, path('M-12,-6 A12 12 0 0 0 12,-6 Z', '#EF4444', '#991B1B', 1.5)]
-        ],
-        slots: [
-            ['arm', 87, 172, -15], ['arm', 213, 172, 15], ['legp', 127, 278], ['legp', 173, 278],
-            ['hand', 64, 179], ['hand', 236, 179], ['shoe', 125, 293.5], ['shoe', 175, 293.5],
-            ['coat', 150, 209], ['head', 150, 116], ['collar', 150, 171], ['belt', 150, 219],
-            ['dot', 139, 110], ['dot', 161, 110], ['smile', 150, 130],
-            ['crown', 150, 44], ['band', 150, 60], ['brim', 150, 75], ['buckle', 150, 60], ['buckle', 150, 219]
-        ]
-    },
-    mayflower: {
-        label: 'Mayflower', emoji: '⛵', W: 320, H: 300,
-        parts: [
-            ['hull', 'Hull Trapezoid', 'trapezoid', 224, 61, 6, poly('-112,-30.5 112,-30.5 74,30.5 -74,30.5', '#9A3412', '#431407', 3.5)],
-            ['mast', 'Tall Rectangle', 'rectangle', 10, 150, 2, rect(10, 150, '#78350F', '#451A03', 2.5)],
-            ['sail-lg', 'Large Square', 'square', 72, 72, 4, rect(72, 72, '#FFFFFF', '#92400E', 3, 4)],
-            ['sail-sm', 'Cream Square', 'square', 56, 56, 4, rect(56, 56, '#FEF3C7', '#92400E', 3, 4)],
-            ['sail-tri', 'Cream Triangle', 'triangle', 45, 58, 4, poly('-22.5,-29 22.5,29 -22.5,29', '#FEF3C7', '#92400E')],
-            ['flag', 'Red Triangle', 'triangle', 36, 20, 5, poly('-18,-10 18,0 -18,10', '#EF4444', '#991B1B', 2.5)],
-            ['stripe', 'Yellow Stripe', 'rectangle', 192, 10, 7, rect(192, 10, '#FACC15', '#CA8A04', 1)],
-            ['port', 'Small Circle', 'circle', 14, 14, 8, circ(7, '#FEF08A', '#431407', 2)],
-            ['ocean', 'Blue Rectangle', 'rectangle', 280, 26, 9, rect(280, 26, '#0284C7', '#0369A1', 2.5, 6)],
-            ['sun', 'Yellow Circle', 'circle', 48, 48, 1, circ(24, '#FACC15', '#CA8A04')]
-        ],
-        slots: [
-            ['sun', 58, 54], ['mast', 111, 137], ['mast', 172, 120], ['mast', 233, 145],
-            ['sail-sm', 111, 123], ['sail-lg', 172, 110], ['sail-tri', 255.5, 125], ['flag', 190, 48],
-            ['hull', 160, 225.5], ['stripe', 160, 217], ['port', 115, 236], ['port', 160, 236], ['port', 205, 236],
-            ['ocean', 160, 269]
-        ]
-    }
-};
-for (const m of Object.values(MODES)) {
-    m.parts = m.parts.map(([id, name, kind, w, h, z, svg]) => ({ id, name, kind, w, h, z, svg }));
-    m.byId = Object.fromEntries(m.parts.map(p => [p.id, p]));
-    m.slots = m.slots.map(([part, x, y, rot = 0, flip = false]) => ({ part, x, y, rot, flip }));
-    m.parts.forEach(p => p.need = m.slots.filter(s => s.part === p.id).length);
-}
-const LEVELS = {
-    easy:   'Shapes snap into the outline.',
-    medium: 'Copy the picture.',
-    hard:   'Look, then build it from memory.'
-};
+            <!-- Floating Selected Item Toolbar -->
+            <div id="item-controls" class="item-controls hidden">
+                <button onclick="bringForward()" title="Bring to Front" class="btn-kid" style="background:#FEF3C7;color:#78350F;">⬆️ Front</button>
+                <button onclick="sendBackward()" title="Send to Back" class="btn-kid" style="background:#FEF3C7;color:#78350F;">⬇️ Back</button>
+                <div class="ctrl-divider"></div>
+                <button onclick="scaleSelected(1.15)" title="Make Bigger" class="btn-kid" style="background:#E0F2FE;color:#0C4A6E;">➕</button>
+                <button onclick="scaleSelected(0.85)" title="Make Smaller" class="btn-kid" style="background:#E0F2FE;color:#0C4A6E;">➖</button>
+                <button onclick="rotateSelected(15)" title="Rotate" class="btn-kid" style="background:#F3E8FF;color:#581C87;">🔄</button>
+                <div class="ctrl-divider"></div>
+                <button onclick="deleteSelected()" title="Remove Part" class="btn-kid btn-reset">🗑️</button>
+            </div>
 
-// ---------- state ----------
-const STORE = 'thanksgiving-shape-challenge-v2';
-const S = { mode: 'turkey', level: 'medium', name: '', sound: true, boards: { turkey: [], pilgrim: [], mayflower: [] } };
-const undoStack = { turkey: [], pilgrim: [], mayflower: [] };
-let sel = null, hintsOn = false, uid = 1, view = { u: 1, ox: 0, oy: 0 }, lookTimer = null, hadGesture = false;
+            <!-- Toast Notification Box -->
+            <div id="toast-box" class="toast-box hidden">Awesome job!</div>
+        </section>
+    </main>
 
-try {
-    const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
-    if (saved && saved.boards) {
-        for (const k of Object.keys(MODES)) {
-            S.boards[k] = (saved.boards[k] || []).filter(p => MODES[k].byId[p.part]);
-            S.boards[k].forEach(p => { p.id = uid++; });
-        }
-        if (MODES[saved.mode]) S.mode = saved.mode;
-        if (LEVELS[saved.level]) S.level = saved.level;
-        S.name = String(saved.name || '').slice(0, 24);
-        S.sound = saved.sound !== false;
-    }
-} catch (_) {}
-function persist() { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (_) {} }
+    <script>
+        /**
+         * THANKSGIVING SHAPE CHALLENGE (100% SELF-CONTAINED)
+         * Built with zero external scripts or CDNs so school Chromebook filters (GoGuardian/Securly)
+         * and Google Sites iframes never block or break any part of the game.
+         */
 
-const $ = id => document.getElementById(id);
-const M = () => MODES[S.mode];
-const board = () => S.boards[S.mode];
-const pieceOf = id => board().find(p => p.id === id);
-const elOf = id => $('world').querySelector(`[data-id="${id}"]`);
+        // --- BUILT-IN NATIVE WEB AUDIO SYNTHESIZER (No external Tone.js needed) ---
+        let soundEnabled = true;
+        let audioCtx = null;
 
-// ---------- sound (Web Audio, nothing to download) ----------
-let ac = null;
-function tone(freq, dur = 0.12, at = 0) {
-    if (!S.sound || !hadGesture) return;
-    try {
-        ac = ac || new (window.AudioContext || window.webkitAudioContext)();
-        if (ac.state === 'suspended') ac.resume();
-        const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + at;
-        o.type = 'triangle'; o.frequency.value = freq;
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(0.16, t + 0.015);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-        o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + dur + 0.03);
-    } catch (_) {}
-}
-const SFX = {
-    pop: () => tone(523), drop: () => tone(392), del: () => tone(165, 0.16), oops: () => { tone(247, 0.14); tone(208, 0.18, 0.12); },
-    snap: () => { tone(659, 0.08); tone(880, 0.12, 0.07); },
-    fanfare: () => [262, 330, 392, 523].forEach((f, i) => tone(f, i === 3 ? 0.4 : 0.16, i * 0.12))
-};
-function say(text) {
-    if (!S.sound || !hadGesture || !('speechSynthesis' in window)) return;
-    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.rate = 0.95; speechSynthesis.speak(u); } catch (_) {}
-}
+        function playTone(freq, duration = 0.12, delay = 0) {
+            if (!soundEnabled) return;
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) return;
+                if (!audioCtx) audioCtx = new AudioContextClass();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
 
-// ---------- drawing ----------
-const tf = p => `rotate(${p.rot}) scale(${(p.flip ? -1 : 1) * p.s} ${p.s})`;
-function boardSVG(mode, pieces) {
-    const m = MODES[mode];
-    return pieces.map((p, i) => [p, i]).sort((a, b) => a[0].z - b[0].z || a[1] - b[1])
-        .map(([p]) => `<g transform="translate(${p.x} ${p.y}) ${tf(p)}">${m.byId[p.part].svg}</g>`).join('');
-}
-function targetSVG(mode) {
-    const m = MODES[mode];
-    const pieces = m.slots.map(s => ({ ...s, s: 1, z: m.byId[s.part].z }));
-    return `<svg viewBox="0 0 ${m.W} ${m.H}" role="img" aria-label="${m.label} made of shapes">${boardSVG(mode, pieces)}</svg>`;
-}
-const PAD = 3;
-function placeEl(el, p) {
-    const part = M().byId[p.part];
-    el.style.left = (p.x - part.w / 2 - PAD) + 'px';
-    el.style.top = (p.y - part.h / 2 - PAD) + 'px';
-    el.style.transform = `rotate(${p.rot}deg) scale(${(p.flip ? -1 : 1) * p.s}, ${p.s})`;
-    el.style.zIndex = 1000 + p.z;
-}
-function makeEl(p) {
-    const part = M().byId[p.part], w = part.w + PAD * 2, h = part.h + PAD * 2;
-    const el = document.createElement('div');
-    el.className = 'piece'; el.dataset.id = p.id; el.tabIndex = 0;
-    el.setAttribute('role', 'button'); el.setAttribute('aria-label', part.name + '. Arrow keys move it.');
-    el.style.width = w + 'px'; el.style.height = h + 'px';
-    el.innerHTML = `<svg viewBox="${-w / 2} ${-h / 2} ${w} ${h}">${part.svg}</svg>`;
-    placeEl(el, p);
-    wireDrag(el, p.id);
-    el.addEventListener('focus', () => select(p.id));
-    return el;
-}
-function renderPieces() {
-    const world = $('world'), refocus = document.activeElement && document.activeElement.classList.contains('piece');
-    world.querySelectorAll('.piece').forEach(e => e.remove());
-    board().forEach(p => world.appendChild(makeEl(p)));
-    if (sel != null && !pieceOf(sel)) sel = null;
-    showSelection();
-    if (refocus && sel != null) elOf(sel).focus({ preventScroll: true });
-    updateCounts();
-}
-function updateCounts() {
-    const m = M(), b = board();
-    let placed = 0;
-    m.parts.forEach(part => {
-        const have = b.filter(p => p.part === part.id).length, left = Math.max(0, part.need - have);
-        placed += Math.min(have, part.need);
-        const card = $('part-' + part.id);
-        card.classList.toggle('done', left === 0);
-        card.querySelector('.left').textContent = left === 0 ? '✓' : '×' + left;
-        card.setAttribute('aria-label', `Add ${part.name}. ${left} more needed.`);
-    });
-    $('progress').textContent = `${placed} of ${m.slots.length} shapes placed`;
-    $('btn-done').classList.toggle('ready', placed === m.slots.length);
-    $('btn-undo').disabled = undoStack[S.mode].length === 0;
-    $('empty-tip').hidden = b.length > 0;
-}
-function showSelection() {
-    $('world').querySelectorAll('.piece.sel').forEach(e => e.classList.remove('sel'));
-    const p = sel != null && pieceOf(sel);
-    $('tools').hidden = !p;
-    if (!p) return;
-    elOf(sel).classList.add('sel');
-    const part = M().byId[p.part];
-    $('tool-name').innerHTML = `<b>${part.name}</b> · ${KIND[part.kind].fact}`;
-}
-function select(id) { if (sel !== id) { sel = id; showSelection(); } }
-function deselect() { sel = null; showSelection(); }
+                const startTime = audioCtx.currentTime + delay;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
 
-// Fit the picture into the free part of the stage (clear of the Copy This card and the toolbar).
-function layout() {
-    const st = $('stage'), m = M(), sw = st.clientWidth, sh = st.clientHeight;
-    if (!sw || !sh) return;
-    const wide = sw >= 640, cardW = wide ? $('target').offsetWidth + 24 : 0;
-    const left = 16, top = 16, aw = sw - 32 - cardW, ah = sh - top - 76;
-    const u = Math.max(0.45, Math.min(aw / m.W, ah / m.H, 2.2));
-    view = { u, ox: left + (aw - m.W * u) / 2, oy: top + Math.max(0, (ah - m.H * u) / 2) };
-    const w = $('world');
-    w.style.width = m.W + 'px'; w.style.height = m.H + 'px';
-    w.style.transform = `translate(${view.ox}px, ${view.oy}px) scale(${u})`;
-}
-function clampToStage(p) {
-    const st = $('stage'), { u, ox, oy } = view;
-    p.x = Math.max((8 - ox) / u, Math.min((st.clientWidth - 8 - ox) / u, p.x));
-    p.y = Math.max((8 - oy) / u, Math.min((st.clientHeight - 8 - oy) / u, p.y));
-}
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, startTime);
 
-// ---------- editing ----------
-function remember(snapshot) {
-    const stack = undoStack[S.mode];
-    stack.push(snapshot || JSON.stringify(board()));
-    if (stack.length > 60) stack.shift();
-}
-function changed(full) { full ? renderPieces() : updateCounts(); persist(); }
-function undo() {
-    const snap = undoStack[S.mode].pop();
-    if (!snap) return;
-    S.boards[S.mode] = JSON.parse(snap);
-    changed(true); SFX.pop(); toast('Undone!');
-}
-function addPart(part) {
-    remember();
-    const m = M(), j = () => (Math.random() - 0.5) * 50;
-    const p = { id: uid++, part: part.id, x: m.W / 2 + j(), y: m.H / 2 + j(), rot: 0, flip: false, s: 1, z: Math.max(0, ...board().map(q => q.z)) + 1 };
-    clampToStage(p);
-    board().push(p); sel = p.id;
-    changed(true); SFX.pop(); say(part.name);
-}
-function act(name) {
-    const p = sel != null && pieceOf(sel);
-    if (!p) return;
-    remember();
-    const zs = board().map(q => q.z);
-    if (name === 'rotR') p.rot = (p.rot + 15) % 360;
-    else if (name === 'rotL') p.rot = (p.rot + 345) % 360;
-    else if (name === 'flip') p.flip = !p.flip;
-    else if (name === 'bigger' || name === 'smaller') {
-        const k = Math.round(Math.log(p.s) / Math.log(1.1)) + (name === 'bigger' ? 1 : -1);
-        p.s = +Math.pow(1.1, Math.max(-7, Math.min(7, k))).toFixed(4);
-    }
-    else if (name === 'front') p.z = Math.max(...zs) + 1;
-    else if (name === 'back') p.z = Math.min(...zs) - 1;
-    else if (name === 'del') {
-        S.boards[S.mode] = board().filter(q => q !== p); sel = null;
-        changed(true); SFX.del(); return;
-    }
-    placeEl(elOf(p.id), p); changed(false); SFX.pop();
-}
-function nudge(dx, dy) {
-    const p = sel != null && pieceOf(sel);
-    if (!p) return;
-    remember(); p.x += dx; p.y += dy; clampToStage(p);
-    placeEl(elOf(p.id), p); changed(false);
-}
-// Easy level: a shape dropped near its place in the outline jumps into it, turned the right way.
-function trySnap(p) {
-    const b = board();
-    let best = null, bestD = 34;
-    for (const s of M().slots) {
-        if (s.part !== p.part) continue;
-        if (b.some(q => q !== p && q.part === p.part && Math.hypot(q.x - s.x, q.y - s.y) < 6)) continue;
-        const d = Math.hypot(p.x - s.x, p.y - s.y);
-        if (d < bestD) { best = s; bestD = d; }
-    }
-    if (!best) return false;
-    Object.assign(p, { x: best.x, y: best.y, rot: (best.rot + 360) % 360, flip: best.flip, s: 1, z: M().byId[p.part].z - 100 });
-    return true;
-}
-function wireDrag(el, id) {
-    let drag = null;
-    el.addEventListener('pointerdown', e => {
-        if (e.button > 0) return;
-        const p = pieceOf(id); if (!p) return;
-        e.stopPropagation(); select(id);
-        drag = { px: e.clientX, py: e.clientY, x: p.x, y: p.y, snap: JSON.stringify(board()), moved: false };
-        el.classList.add('drag');
-        try { el.setPointerCapture(e.pointerId); } catch (_) {}
-    });
-    el.addEventListener('pointermove', e => {
-        const p = drag && pieceOf(id); if (!p) return;
-        const dx = (e.clientX - drag.px) / view.u, dy = (e.clientY - drag.py) / view.u;
-        if (!drag.moved && Math.hypot(dx, dy) * view.u < 3) return;
-        drag.moved = true;
-        p.x = drag.x + dx; p.y = drag.y + dy; clampToStage(p); placeEl(el, p);
-    });
-    const end = e => {
-        if (!drag) return;
-        const d = drag, p = pieceOf(id); drag = null;
-        el.classList.remove('drag');
-        try { el.releasePointerCapture(e.pointerId); } catch (_) {}
-        if (!d.moved || !p) return;
-        remember(d.snap);
-        if (S.level === 'easy' && trySnap(p)) { placeEl(el, p); SFX.snap(); } else SFX.drop();
-        changed(false);
-    };
-    el.addEventListener('pointerup', end);
-    el.addEventListener('pointercancel', end);
-}
+                gain.gain.setValueAtTime(0.14, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
-// ---------- checking the picture ----------
-const median = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[s.length >> 1] : 0; };
-function checkBoard() {
-    const m = M(), b = board();
-    const missing = m.parts.map(part => ({ part, n: part.need - b.filter(p => p.part === part.id).length })).filter(x => x.n > 0);
-    // The picture may be built anywhere on the stage: line it up using the one-of-a-kind shapes.
-    const dxs = [], dys = [];
-    m.slots.forEach(s => {
-        if (m.byId[s.part].need !== 1) return;
-        const p = b.find(q => q.part === s.part);
-        if (p) { dxs.push(p.x - s.x); dys.push(p.y - s.y); }
-    });
-    const ox = median(dxs), oy = median(dys), used = new Set();
-    let open = 0;
-    m.slots.forEach(s => {
-        const part = m.byId[s.part], tol = Math.min(30, 14 + 0.15 * Math.max(part.w, part.h));
-        let best = null, bestD = tol;
-        b.forEach(p => {
-            if (p.part !== s.part || used.has(p.id)) return;
-            const d = Math.hypot(p.x - ox - s.x, p.y - oy - s.y);
-            if (d <= bestD) { best = p; bestD = d; }
-        });
-        best ? used.add(best.id) : open++;
-    });
-    return { missing, open, loose: b.filter(p => !used.has(p.id)).map(p => p.id) };
-}
-function done() {
-    deselect();
-    if (!board().length) { toast('Add some shapes first!'); SFX.oops(); return; }
-    const r = checkBoard();
-    if (r.missing.length) {
-        const list = r.missing.slice(0, 2).map(x => `${x.n} ${x.part.name}${x.n > 1 ? 's' : ''}`).join(' and ');
-        toast(`Keep going! You still need ${list}${r.missing.length > 2 ? ' and more' : ''}.`, 4200);
-        SFX.oops(); return;
-    }
-    if (r.open) {
-        toast(`So close! Move the wiggling shape${r.loose.length === 1 ? '' : 's'} to match the picture.`, 4200);
-        r.loose.forEach(id => { const el = elOf(id); if (el) { el.classList.add('wiggle'); setTimeout(() => el.classList.remove('wiggle'), 1600); } });
-        SFX.oops(); return;
-    }
-    SFX.fanfare(); confetti();
-    toast(`🎉 You built the ${M().label}! Happy Thanksgiving!`, 2600);
-    setTimeout(askCount, 1700);
-}
-// Math question after a finished picture.
-function askCount() {
-    const m = M(), counts = {};
-    m.slots.forEach(s => { const k = m.byId[s.part].kind; counts[k] = (counts[k] || 0) + 1; });
-    const kinds = Object.keys(counts).filter(k => counts[k] >= 2 && !(k === 'rectangle' && counts.square));
-    const kind = kinds[Math.floor(Math.random() * kinds.length)], answer = counts[kind];
-    const opts = new Set([answer]);
-    while (opts.size < 4) { const n = answer + Math.floor(Math.random() * 6) - 2; if (n > 0) opts.add(n); }
-    const glow = on => board().forEach(p => { const el = elOf(p.id); if (el) el.classList.toggle('count', on && m.byId[p.part].kind === kind); });
-    glow(true);
-    const ask = note => openModal(`How many ${KIND[kind].plural} are in your ${m.label}?`,
-        note || `Count the glowing shapes. A ${kind} is ${KIND[kind].fact}.`,
-        [...opts].sort((a, b) => a - b).map(n => ({
-            label: String(n), cls: 'num', keep: true,
-            on: () => {
-                if (n !== answer) { SFX.oops(); ask('Not quite. Count the glowing shapes one more time!'); return; }
-                SFX.fanfare(); glow(false);
-                openModal(`Yes! ${answer} ${KIND[kind].plural}.`, 'Great counting. Save your picture or try another one!',
-                    [{ label: '📸 Save picture', cls: 'go', on: savePicture }, { label: 'Keep building' }]);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+            } catch (e) {
+                // Ignore audio errors if blocked by browser autoplay policy
             }
-        })), () => glow(false));
-    ask();
-}
-
-// ---------- dialogs, toast, confetti ----------
-let modalClose = null;
-function openModal(title, text, buttons, onClose) {
-    $('modal-title').textContent = title; $('modal-text').textContent = text;
-    const box = $('modal-choices'); box.innerHTML = '';
-    if (onClose) modalClose = onClose;
-    buttons.forEach(b => {
-        const el = document.createElement('button');
-        el.className = 'btn ' + (b.cls || ''); el.textContent = b.label;
-        el.addEventListener('click', () => { if (!b.keep) closeModal(); if (b.on) b.on(); });
-        box.appendChild(el);
-    });
-    $('modal').hidden = false;
-    box.firstChild.focus();
-}
-function closeModal() { $('modal').hidden = true; if (modalClose) { const f = modalClose; modalClose = null; f(); } }
-let toastTimer = null;
-function toast(msg, ms = 2400) {
-    const t = $('toast'); t.textContent = msg; t.hidden = false;
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, ms);
-}
-function confetti() {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const c = $('confetti'), w = c.width = c.clientWidth, h = c.height = c.clientHeight, ctx = c.getContext('2d');
-    const colors = ['#F97316', '#EAB308', '#DC2626', '#0D9488', '#7C2D12'];
-    const bits = Array.from({ length: 110 }, () => ({
-        x: w / 2, y: h * 0.6, vx: (Math.random() - 0.5) * 16, vy: -Math.random() * 15 - 4,
-        r: Math.random() * 6 + 4, a: Math.random() * 6, c: colors[Math.floor(Math.random() * colors.length)], tri: Math.random() < 0.5
-    }));
-    let frame = 0;
-    (function step() {
-        ctx.clearRect(0, 0, w, h);
-        bits.forEach(b => {
-            b.x += b.vx; b.y += b.vy; b.vy += 0.45; b.vx *= 0.99; b.a += 0.2;
-            ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.a); ctx.fillStyle = b.c; ctx.globalAlpha = Math.max(0, 1 - frame / 110);
-            if (b.tri) { ctx.beginPath(); ctx.moveTo(0, -b.r); ctx.lineTo(b.r, b.r); ctx.lineTo(-b.r, b.r); ctx.fill(); } else ctx.fillRect(-b.r / 2, -b.r / 2, b.r, b.r);
-            ctx.restore();
-        });
-        if (++frame < 110) requestAnimationFrame(step); else ctx.clearRect(0, 0, w, h);
-    })();
-}
-
-// ---------- save a picture ----------
-const esc = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-async function savePicture() {
-    deselect();
-    const m = M(), b = board();
-    if (!b.length) { toast('Add some shapes first, then save!'); return; }
-    let x0 = 0, y0 = 0, x1 = m.W, y1 = m.H;
-    b.forEach(p => {
-        const part = m.byId[p.part], r = Math.max(part.w, part.h) * p.s / 2 + 4;
-        x0 = Math.min(x0, p.x - r); y0 = Math.min(y0, p.y - r); x1 = Math.max(x1, p.x + r); y1 = Math.max(y1, p.y + r);
-    });
-    x0 -= 16; y0 -= 16; x1 += 16; y1 += 46;
-    const w = x1 - x0, h = y1 - y0, name = S.name.trim();
-    const caption = name ? `${m.label} by ${name}` : `My Shape ${m.label}`;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${x0} ${y0} ${w} ${h}">` +
-        `<defs><radialGradient id="g" cx="50%" cy="45%" r="75%"><stop offset="0" stop-color="#FFFBEB"/><stop offset=".65" stop-color="#FDE68A"/><stop offset="1" stop-color="#FCD34D"/></radialGradient></defs>` +
-        `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="url(#g)"/>${boardSVG(S.mode, b)}` +
-        `<text x="${x0 + w / 2}" y="${y1 - 14}" text-anchor="middle" font-family="Trebuchet MS, Arial, sans-serif" font-weight="bold" font-size="18" fill="#451A03">${esc(caption)}</text></svg>`;
-    try {
-        const img = new Image();
-        await new Promise((ok, bad) => { img.onload = ok; img.onerror = bad; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); });
-        const k = 3, cv = document.createElement('canvas');
-        cv.width = Math.round(w * k); cv.height = Math.round(h * k);
-        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-        const blob = await new Promise(ok => cv.toBlob(ok, 'image/png'));
-        const safe = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        const filename = `${safe ? safe + '-' : 'my-'}shape-${S.mode}.png`;
-        const dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
-        if (dl) {
-            await dl.save({ filename, data: blob });
-        } else {
-            const a = document.createElement('a');
-            a.download = filename; a.href = URL.createObjectURL(blob);
-            document.body.appendChild(a); a.click(); a.remove();
-            setTimeout(() => URL.revokeObjectURL(a.href), 4000);
         }
-        SFX.fanfare(); toast('✅ Picture saved!');
-    } catch (err) {
-        if (err && err.code === 'declined') toast('Okay, not saved.');
-        else toast('Saving is not available here. Ask your teacher for help.', 4000);
-    }
-}
 
-// ---------- modes, levels, the Copy This card ----------
-function buildTray() {
-    const m = M(), box = $('parts');
-    box.innerHTML = '';
-    $('tray-title').textContent = `${m.emoji} ${m.label} shapes`;
-    m.parts.forEach(part => {
-        const v = Math.max(part.w, part.h, 44) + 8;
-        const card = document.createElement('button');
-        card.className = 'part'; card.id = 'part-' + part.id;
-        card.innerHTML = `<svg viewBox="${-v / 2} ${-v / 2} ${v} ${v}">${part.svg}</svg><span class="nm">${part.name}</span><span class="left"></span>`;
-        card.addEventListener('click', () => addPart(part));
-        box.appendChild(card);
-    });
-}
-function setMode(mode, quiet) {
-    S.mode = mode; sel = null;
-    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-pressed', String(t.dataset.mode === mode)));
-    $('target-pic').innerHTML = targetSVG(mode);
-    $('ghost').innerHTML = targetSVG(mode);
-    buildTray(); layout(); renderPieces(); applyLevel(); persist();
-    if (!quiet) SFX.pop();
-}
-function applyLevel() {
-    document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.level === S.level)));
-    $('level-tip').textContent = LEVELS[S.level];
-    $('btn-hint').hidden = S.level !== 'medium';
-    $('btn-peek').hidden = S.level !== 'hard';
-    $('hint-text').textContent = hintsOn ? 'Hide outline' : 'Show outline';
-    $('ghost').classList.toggle('on', S.level === 'easy' || (S.level === 'medium' && hintsOn));
-    clearTimeout(lookTimer); $('look-bar').hidden = true;
-    $('target').classList.remove('gone');
-    if (S.level === 'hard') look(10);
-}
-// Hard level: the picture shows for a few seconds, then hides.
-function look(seconds) {
-    const card = $('target'), bar = $('look-bar'), fill = bar.firstElementChild;
-    clearTimeout(lookTimer);
-    card.classList.remove('gone', 'min'); bar.hidden = false;
-    if (fill.animate) fill.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: seconds * 1000, fill: 'forwards' });
-    lookTimer = setTimeout(() => { card.classList.add('gone'); bar.hidden = true; }, seconds * 1000);
-}
+        function playSound(type) {
+            if (!soundEnabled) return;
+            if (type === 'pop') playTone(523.25, 0.1);
+            else if (type === 'drop') playTone(392.00, 0.1);
+            else if (type === 'delete') playTone(196.00, 0.14);
+            else if (type === 'fanfare') {
+                playTone(261.63, 0.14, 0.00);
+                playTone(329.63, 0.14, 0.11);
+                playTone(392.00, 0.14, 0.22);
+                playTone(523.25, 0.32, 0.33);
+            }
+        }
 
-// ---------- wiring ----------
-function init() {
-    document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => setMode(t.dataset.mode)));
-    document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
-        S.level = b.dataset.level; applyLevel(); persist(); SFX.pop();
-        toast(b.textContent + ': ' + LEVELS[S.level]);
-    }));
-    $('btn-hint').addEventListener('click', () => { hintsOn = !hintsOn; applyLevel(); SFX.pop(); });
-    $('btn-peek').addEventListener('click', () => { look(5); SFX.pop(); });
-    $('btn-undo').addEventListener('click', undo);
-    $('btn-done').addEventListener('click', done);
-    $('btn-save').addEventListener('click', savePicture);
-    $('btn-reset').addEventListener('click', () => {
-        if (!board().length) { toast('The board is already empty.'); return; }
-        openModal('Clear the whole board?', 'All your shapes will go back in the tray.', [
-            { label: 'Yes, clear it', cls: 'stop', on: () => { remember(); S.boards[S.mode] = []; sel = null; changed(true); SFX.del(); toast('Board cleared. Tap Undo to bring it back.'); } },
-            { label: 'Keep building', cls: 'go' }
-        ]);
-    });
-    const snd = $('btn-sound'), paintSound = () => { snd.textContent = S.sound ? '🔊' : '🔇'; snd.setAttribute('aria-pressed', String(S.sound)); };
-    snd.addEventListener('click', () => { S.sound = !S.sound; paintSound(); persist(); toast(S.sound ? 'Sound on' : 'Sound off'); SFX.pop(); });
-    paintSound();
-    $('btn-zoom').addEventListener('click', () => { $('target').classList.remove('min'); $('target').classList.toggle('big'); layout(); });
-    $('btn-min').addEventListener('click', () => { $('target').classList.toggle('min'); layout(); });
-    $('tools').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) act(b.dataset.act); });
-    $('tools').addEventListener('pointerdown', e => e.stopPropagation());
-    $('target').addEventListener('pointerdown', e => e.stopPropagation());
-    $('stage').addEventListener('pointerdown', deselect);
-    $('modal').addEventListener('pointerdown', e => { if (e.target === $('modal')) closeModal(); });
-    const nm = $('name-input');
-    nm.value = S.name;
-    nm.addEventListener('input', () => { S.name = nm.value; persist(); });
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('btn-sound').textContent = soundEnabled ? '🔊' : '🔇';
+            showToast(soundEnabled ? "Sound On!" : "Sound Muted");
+        }
 
-    const firstGesture = () => { hadGesture = true; };
-    window.addEventListener('pointerdown', firstGesture, true);
-    window.addEventListener('keydown', firstGesture, true);
-    window.addEventListener('keydown', e => {
-        if (!$('modal').hidden) { if (e.key === 'Escape') closeModal(); return; }
-        if (e.target.matches && e.target.matches('input, textarea')) return;
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
-        if (sel == null || e.ctrlKey || e.metaKey || e.altKey) return;
-        const step = e.shiftKey ? 10 : 2;
-        const keys = {
-            ArrowLeft: () => nudge(-step, 0), ArrowRight: () => nudge(step, 0), ArrowUp: () => nudge(0, -step), ArrowDown: () => nudge(0, step),
-            Delete: () => act('del'), Backspace: () => act('del'), Escape: deselect,
-            r: () => act('rotR'), R: () => act('rotL'), f: () => act('flip'), F: () => act('flip'),
-            '+': () => act('bigger'), '=': () => act('bigger'), '-': () => act('smaller'), ']': () => act('front'), '[': () => act('back')
+        // --- BUILT-IN CONFETTI ANIMATION (No external CDN needed) ---
+        function launchNativeConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const colors = ['#F97316', '#EAB308', '#DC2626', '#16A34A', '#0EA5E9'];
+            const particles = Array.from({ length: 85 }, () => ({
+                x: canvas.width * 0.5 + (Math.random() - 0.5) * 200,
+                y: canvas.height * 0.55,
+                vx: (Math.random() - 0.5) * 14,
+                vy: -Math.random() * 14 - 4,
+                size: Math.random() * 8 + 5,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                rot: Math.random() * 360,
+                vRot: (Math.random() - 0.5) * 12
+            }));
+
+            let frame = 0;
+            function animateConfetti() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.38; // gravity
+                    p.rot += p.vRot;
+
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate((p.rot * Math.PI) / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+                    ctx.restore();
+                });
+                frame++;
+                if (frame < 110) requestAnimationFrame(animateConfetti);
+                else ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            requestAnimationFrame(animateConfetti);
+        }
+
+        // --- TOAST MESSAGE HELPER ---
+        let toastTimeout = null;
+        function showToast(msg) {
+            const toast = document.getElementById('toast-box');
+            toast.textContent = msg;
+            toast.classList.remove('hidden');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 2400);
+        }
+
+        // --- GEOMETRIC SHAPE LIBRARY FOR ALL 3 TARGET CHALLENGES ---
+        const GAME_DATA = {
+            turkey: {
+                title: "Turkey Shapes",
+                emoji: "🦃",
+                hint: "Recreate the shape turkey! Rotate & resize triangles, circles & ovals.",
+                // Full geometric target composition that students copy
+                targetSVG: `
+                    <svg viewBox="0 0 320 300" class="w-full h-full">
+                        <!-- Tail Feathers (5 rotated triangles) -->
+                        <polygon points="160,155 128,45 192,45" fill="#DC2626" stroke="#7F1D1D" stroke-width="3" stroke-linejoin="round" transform="rotate(-48 160 155)"/>
+                        <polygon points="160,155 128,45 192,45" fill="#F97316" stroke="#9A3412" stroke-width="3" stroke-linejoin="round" transform="rotate(-24 160 155)"/>
+                        <polygon points="160,155 128,45 192,45" fill="#EAB308" stroke="#854D0E" stroke-width="3" stroke-linejoin="round"/>
+                        <polygon points="160,155 128,45 192,45" fill="#F97316" stroke="#9A3412" stroke-width="3" stroke-linejoin="round" transform="rotate(24 160 155)"/>
+                        <polygon points="160,155 128,45 192,45" fill="#0D9488" stroke="#115E59" stroke-width="3" stroke-linejoin="round" transform="rotate(48 160 155)"/>
+                        <!-- Legs (2 thin orange rectangles) -->
+                        <rect x="134" y="232" width="12" height="44" rx="4" fill="#F59E0B" stroke="#B45309" stroke-width="2.5"/>
+                        <rect x="174" y="232" width="12" height="44" rx="4" fill="#F59E0B" stroke="#B45309" stroke-width="2.5"/>
+                        <!-- Feet (2 small orange triangles) -->
+                        <polygon points="140,264 122,284 158,284" fill="#F59E0B" stroke="#B45309" stroke-width="2.5" stroke-linejoin="round"/>
+                        <polygon points="180,264 162,284 198,284" fill="#F59E0B" stroke="#B45309" stroke-width="2.5" stroke-linejoin="round"/>
+                        <!-- Body (Large Brown Circle) -->
+                        <circle cx="160" cy="185" r="58" fill="#7C2D12" stroke="#431407" stroke-width="3.5"/>
+                        <!-- Wings (2 Brown Semicircles) -->
+                        <path d="M102 155 A32 32 0 0 0 102 215 Z" fill="#9A3412" stroke="#431407" stroke-width="3"/>
+                        <path d="M218 155 A32 32 0 0 1 218 215 Z" fill="#9A3412" stroke="#431407" stroke-width="3"/>
+                        <!-- Head (Medium Brown Circle) -->
+                        <circle cx="160" cy="118" r="32" fill="#9A3412" stroke="#431407" stroke-width="3.5"/>
+                        <!-- Eyes (2 White Circles + 2 Black Dots) -->
+                        <circle cx="149" cy="110" r="7" fill="#FFFFFF" stroke="#1E293B" stroke-width="2"/>
+                        <circle cx="149" cy="110" r="3" fill="#0F172A"/>
+                        <circle cx="171" cy="110" r="7" fill="#FFFFFF" stroke="#1E293B" stroke-width="2"/>
+                        <circle cx="171" cy="110" r="3" fill="#0F172A"/>
+                        <!-- Wattle (Red Oval) -->
+                        <ellipse cx="169" cy="136" rx="6" ry="12" fill="#EF4444" stroke="#991B1B" stroke-width="2"/>
+                        <!-- Beak (Yellow Triangle) -->
+                        <polygon points="148,122 172,122 160,140" fill="#FACC15" stroke="#A16207" stroke-width="2.5" stroke-linejoin="round"/>
+                    </svg>
+                `,
+                parts: [
+                    {
+                        id: 's-brown-circle-lg',
+                        name: 'Large Circle',
+                        width: 130,
+                        height: 130,
+                        defaultZ: 12,
+                        svg: `<svg viewBox="0 0 120 120" width="100%" height="100%">
+                            <circle cx="60" cy="60" r="54" fill="#7C2D12" stroke="#431407" stroke-width="4"/>
+                        </svg>`
+                    },
+                    {
+                        id: 's-brown-circle-md',
+                        name: 'Medium Circle',
+                        width: 82,
+                        height: 82,
+                        defaultZ: 16,
+                        svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+                            <circle cx="50" cy="50" r="44" fill="#9A3412" stroke="#431407" stroke-width="4"/>
+                        </svg>`
+                    },
+                    {
+                        id: 's-brown-semi',
+                        name: 'Half Circle',
+                        width: 55,
+                        height: 85,
+                        defaultZ: 18,
+                        svg: `<svg viewBox="0 0 60 100" width="100%" height="100%">
+                            <path d="M50 10 A40 40 0 0 0 50 90 Z" fill="#9A3412" stroke="#431407" stroke-width="4" stroke-linejoin="round"/>
+                        </svg>`
+                    },
+                    {
+                        id: 's-tri-red',
+                        name: 'Red Triangle',
+                        width: 72,
+                        height: 125,
+                        defaultZ: 6,
+                        svg: `<svg viewBox="0 0 80 140" width="100%" height="100%">
+                            <polygon points="40,10 72,130 8,130" fill="#DC2626" stroke="#7F1D1D" stroke-width="4" stroke-linejoin="round"/>
+                        </svg>`
+                    },
+                    {
+                        id: 's-tri-orange',
+                        name: 'Orange Triangle',
+                        width: 72,
+                        height: 125,
+                        defaultZ: 6,
+                        svg: `<svg viewBox="0 0 80 140" width="100%" height="100%">
+                            <polygon points="40,10 72,130 8,130" fill="#F97316" stroke="#9A3412" stroke-width="4" stroke-linejoin="round"/>
+                        </svg>`
+                    },
+                    {
+                        id: 's-tri-yellow',
+                        name: 'Yellow Triangle',
+                        width: 72,
+                        height: 125,
+                        defaultZ: 6,
+                        svg: `<svg viewBox="0 0 80 140" width="100%" height="100%">
+                            <polygon points="40,10 72,130 8,130" fill="#EAB308" stroke="#854D0E" stroke-width="4" stroke-linejoin="round"/>
+                        </svg>`
+                    },
+                    {
+                        id: 's-tri-teal',
+                        name: 'Teal Triangle',
+                        width: 72,
+                        height: 125,
+                        defaultZ: 6,
+                        svg: `<svg viewBox="0 0 80 140" width="100%" height="100%">
+                            <polygon points="40,10 72,130 8,130" fill="#0D9488" stroke="#115E59" stroke-width="4" stroke-linejoin="round"/>
+                        </svg>`
+                    },
+                    {
+                        id: 's-tri-beak',
+                        name: 'Small Triangle',
+                        width: 44,
+                        height: 40,
+                        defaultZ: 24,
+                        svg: `<svg viewBox="0 0 60 55" width="100%" height="100%">
+                            <polygon points="8,10 52,10 30,48" fill="#FACC15" stroke="#A16207" stroke-width="4" stroke-linejoin="round"/>
+                        </svg>`
+                    },
+                    {
+                        id: 's-oval-red',
+                        name: 'Red Oval',
+                        width: 26,
+                        height: 38,
+                        defaultZ: 22,
+                        svg: `<svg viewBox="0 0 40 60" width="100%" height="100%">
+                            <ellipse cx="20" cy="30" rx="14" ry="24" fill="#EF4444" stroke="#991B1B" stroke-width="4"/>
+                        </svg>`
+                    },
+                    {
+                        id: 's-eye-circle',
+                        name: 'Eye Circle',
+                        width: 32,
+                        height: 32,
+                        defaultZ: 25,
+                        svg: `<svg viewBox="0 0 50 50" width="100%" height="100%">
+                            <circle cx="25" cy="25" r="20" fill="#FFFFFF" stroke="#1E293B" stroke-width="4"/>
+                            <circle cx="25" cy="25" r="9" fill="#0F172A"/>
+                        </svg>`
+                    },
+                    {
+                        id: 's-rect-leg',
+                        name: 'Thin Rectangle',
+                        width: 24,
+                        height: 60,
+                        defaultZ: 8,
+                        svg: `<svg viewBox="0 0 36 90" width="100%" height="100%">
+                            <rect x="8" y="6" width="20" height="78" rx="4" fill="#F59E0B" stroke="#B45309" stroke-width="4"/>
+                        </svg>`
+                    },
+                    {
+                        id: 's-tri-foot',
+                        name: 'Orange Triangle',
+                        width: 48,
+                        height: 36,
+                        defaultZ: 9,
+                        svg: `<svg viewBox="0 0 70 50" width="100%" height="100%">
+                            <polygon points="35,8 62,42 8,42" fill="#F59E0B" stroke="#B45309" stroke-width="4" stroke-linejoin="round"/>
+                        </svg>`
+                    }
+                ]
+            },
+
+            pilgrim: {
+                title: "Pilgrim Shapes",
+                emoji: "👒",
+                hint: "Recreate the shape Pilgrim! Combine trapezoids, rectangles, squares & circles.",
+                targetSVG: `
+                    <svg viewBox="0 0 300 320" class="w-full h-full">
+                        <!-- Hat Crown (Dark Square) -->
+                        <rect x="115" y="18" width="70" height="52" rx="4" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>
+                        <!-- Hat Band (White Rectangle) -->
+                        <rect x="115" y="54" width="70" height="12" fill="#F8FAFC" stroke="#94A3B8" stroke-width="2"/>
+                        <!-- Hat Buckle (Yellow Square) -->
+                        <rect x="140" y="50" width="20" height="20" fill="#FACC15" stroke="#A16207" stroke-width="2.5"/>
+                        <!-- Hat Brim (Long Dark Rectangle) -->
+                        <rect x="82" y="68" width="136" height="14" rx="6" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>
+                        <!-- Head (Peach Circle) -->
+                        <circle cx="150" cy="116" r="34" fill="#FDBA74" stroke="#9A3412" stroke-width="3"/>
+                        <!-- Eyes (2 Black Circles) -->
+                        <circle cx="139" cy="110" r="4" fill="#0F172A"/>
+                        <circle cx="161" cy="110" r="4" fill="#0F172A"/>
+                        <!-- Smile (Red Semicircle) -->
+                        <path d="M138 124 A12 12 0 0 0 162 124 Z" fill="#EF4444"/>
+                        <!-- Arms (2 Dark Rectangles) -->
+                        <rect x="65" y="162" width="44" height="20" rx="6" transform="rotate(-20 87 172)" fill="#334155" stroke="#0F172A" stroke-width="3"/>
+                        <rect x="191" y="162" width="44" height="20" rx="6" transform="rotate(20 213 172)" fill="#334155" stroke="#0F172A" stroke-width="3"/>
+                        <!-- Hands (2 Peach Circles) -->
+                        <circle cx="64" cy="180" r="10" fill="#FDBA74" stroke="#9A3412" stroke-width="2.5"/>
+                        <circle cx="236" cy="180" r="10" fill="#FDBA74" stroke="#9A3412" stroke-width="2.5"/>
+                        <!-- Coat Body (Large Dark Trapezoid) -->
+                        <polygon points="108,154 192,154 214,264 86,264" fill="#1E293B" stroke="#0F172A" stroke-width="3.5" stroke-linejoin="round"/>
+                        <!-- White Collar (Inverted White Triangle) -->
+                        <polygon points="118,154 182,154 150,188" fill="#F8FAFC" stroke="#94A3B8" stroke-width="2.5" stroke-linejoin="round"/>
+                        <!-- Belt (Brown Rectangle) -->
+                        <rect x="97" y="212" width="106" height="14" fill="#78350F" stroke="#451A03" stroke-width="2"/>
+                        <!-- Belt Buckle (Yellow Square) -->
+                        <rect x="140" y="209" width="20" height="20" fill="#FACC15" stroke="#A16207" stroke-width="2.5"/>
+                        <!-- Legs (2 Dark Rectangles) -->
+                        <rect x="116" y="264" width="22" height="28" fill="#334155" stroke="#0F172A" stroke-width="3"/>
+                        <rect x="162" y="264" width="22" height="28" fill="#334155" stroke="#0F172A" stroke-width="3"/>
+                        <!-- Shoes (2 Black Semicircles) -->
+                        <path d="M104 304 A22 22 0 0 1 146 304 Z" fill="#0F172A"/>
+                        <path d="M154 304 A22 22 0 0 1 196 304 Z" fill="#0F172A"/>
+                    </svg>
+                `,
+                parts: [
+                    {
+                        id: 'sp-trapezoid-coat',
+                        name: 'Large Trapezoid',
+                        width: 145,
+                        height: 125,
+                        defaultZ: 12,
+                        svg: `<svg viewBox="0 0 160 140" width="100%" height="100%">
+                            <polygon points="34,10 126,10 150,130 10,130" fill="#1E293B" stroke="#0F172A" stroke-width="4" stroke-linejoin="round"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sp-circle-head',
+                        name: 'Peach Circle',
+                        width: 82,
+                        height: 82,
+                        defaultZ: 15,
+                        svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+                            <circle cx="50" cy="50" r="44" fill="#FDBA74" stroke="#9A3412" stroke-width="4"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sp-square-hat',
+                        name: 'Dark Square',
+                        width: 82,
+                        height: 64,
+                        defaultZ: 20,
+                        svg: `<svg viewBox="0 0 100 80" width="100%" height="100%">
+                            <rect x="8" y="8" width="84" height="64" rx="4" fill="#1E293B" stroke="#0F172A" stroke-width="4"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sp-rect-brim',
+                        name: 'Long Rectangle',
+                        width: 150,
+                        height: 24,
+                        defaultZ: 22,
+                        svg: `<svg viewBox="0 0 180 30" width="100%" height="100%">
+                            <rect x="6" y="5" width="168" height="20" rx="8" fill="#1E293B" stroke="#0F172A" stroke-width="4"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sp-rect-white',
+                        name: 'White Rectangle',
+                        width: 82,
+                        height: 20,
+                        defaultZ: 23,
+                        svg: `<svg viewBox="0 0 110 26" width="100%" height="100%">
+                            <rect x="5" y="4" width="100" height="18" fill="#F8FAFC" stroke="#94A3B8" stroke-width="3"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sp-tri-collar',
+                        name: 'White Triangle',
+                        width: 76,
+                        height: 46,
+                        defaultZ: 18,
+                        svg: `<svg viewBox="0 0 90 55" width="100%" height="100%">
+                            <polygon points="8,8 82,8 45,48" fill="#F8FAFC" stroke="#94A3B8" stroke-width="4" stroke-linejoin="round"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sp-rect-belt',
+                        name: 'Brown Rectangle',
+                        width: 120,
+                        height: 22,
+                        defaultZ: 18,
+                        svg: `<svg viewBox="0 0 140 26" width="100%" height="100%">
+                            <rect x="5" y="4" width="130" height="18" fill="#78350F" stroke="#451A03" stroke-width="3"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sp-square-buckle',
+                        name: 'Yellow Square',
+                        width: 28,
+                        height: 28,
+                        defaultZ: 25,
+                        svg: `<svg viewBox="0 0 40 40" width="100%" height="100%">
+                            <rect x="6" y="6" width="28" height="28" rx="3" fill="#FACC15" stroke="#A16207" stroke-width="4"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sp-rect-arm',
+                        name: 'Small Rectangle',
+                        width: 55,
+                        height: 28,
+                        defaultZ: 10,
+                        svg: `<svg viewBox="0 0 70 36" width="100%" height="100%">
+                            <rect x="6" y="6" width="58" height="24" rx="6" fill="#334155" stroke="#0F172A" stroke-width="4"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sp-circle-hand',
+                        name: 'Small Circle',
+                        width: 28,
+                        height: 28,
+                        defaultZ: 14,
+                        svg: `<svg viewBox="0 0 40 40" width="100%" height="100%">
+                            <circle cx="20" cy="20" r="14" fill="#FDBA74" stroke="#9A3412" stroke-width="4"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sp-semi-shoe',
+                        name: 'Half Circle',
+                        width: 52,
+                        height: 30,
+                        defaultZ: 14,
+                        svg: `<svg viewBox="0 0 70 40" width="100%" height="100%">
+                            <path d="M8 34 A27 27 0 0 1 62 34 Z" fill="#0F172A"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sp-dot-eye',
+                        name: 'Tiny Circle',
+                        width: 18,
+                        height: 18,
+                        defaultZ: 26,
+                        svg: `<svg viewBox="0 0 30 30" width="100%" height="100%">
+                            <circle cx="15" cy="15" r="10" fill="#0F172A"/>
+                        </svg>`
+                    }
+                ]
+            },
+
+            mayflower: {
+                title: "Mayflower Shapes",
+                emoji: "⛵",
+                hint: "Recreate the shape Mayflower! Build the hull & sails with trapezoids, squares & triangles.",
+                targetSVG: `
+                    <svg viewBox="0 0 320 300" class="w-full h-full">
+                        <!-- Sun (Yellow Circle) -->
+                        <circle cx="58" cy="54" r="24" fill="#FACC15" stroke="#CA8A04" stroke-width="3"/>
+                        <!-- Left Mast (Tall Brown Rectangle) -->
+                        <rect x="106" y="72" width="10" height="135" fill="#78350F" stroke="#451A03" stroke-width="2.5"/>
+                        <!-- Center Mast (Tallest Brown Rectangle) -->
+                        <rect x="166" y="45" width="12" height="162" fill="#78350F" stroke="#451A03" stroke-width="2.5"/>
+                        <!-- Right Mast (Brown Rectangle) -->
+                        <rect x="228" y="85" width="10" height="122" fill="#78350F" stroke="#451A03" stroke-width="2.5"/>
+                        <!-- Left Sail (Cream Square) -->
+                        <rect x="82" y="96" width="58" height="54" rx="4" fill="#FEF3C7" stroke="#92400E" stroke-width="3"/>
+                        <!-- Center Main Sail (Large White Square) -->
+                        <rect x="136" y="74" width="72" height="72" rx="4" fill="#FFFFFF" stroke="#92400E" stroke-width="3"/>
+                        <!-- Right Front Sail (Cream Triangle) -->
+                        <polygon points="233,96 278,154 233,154" fill="#FEF3C7" stroke="#92400E" stroke-width="3" stroke-linejoin="round"/>
+                        <!-- Top Pennant Flag (Red Triangle) -->
+                        <polygon points="172,38 208,48 172,58" fill="#EF4444" stroke="#991B1B" stroke-width="2.5" stroke-linejoin="round"/>
+                        <!-- Ship Hull (Large Brown Inverted Trapezoid) -->
+                        <polygon points="48,195 272,195 234,256 86,256" fill="#9A3412" stroke="#431407" stroke-width="3.5" stroke-linejoin="round"/>
+                        <!-- Hull Stripe (Yellow Rectangle) -->
+                        <rect x="64" y="212" width="192" height="10" fill="#FACC15"/>
+                        <!-- Portholes (3 Yellow Circles) -->
+                        <circle cx="115" cy="236" r="7" fill="#FEF08A" stroke="#431407" stroke-width="2"/>
+                        <circle cx="160" cy="236" r="7" fill="#FEF08A" stroke="#431407" stroke-width="2"/>
+                        <circle cx="205" cy="236" r="7" fill="#FEF08A" stroke="#431407" stroke-width="2"/>
+                        <!-- Ocean Base (Blue Rectangle) -->
+                        <rect x="20" y="256" width="280" height="26" rx="6" fill="#0284C7" stroke="#0369A1" stroke-width="2.5"/>
+                    </svg>
+                `,
+                parts: [
+                    {
+                        id: 'sm-hull-trap',
+                        name: 'Hull Trapezoid',
+                        width: 225,
+                        height: 75,
+                        defaultZ: 15,
+                        svg: `<svg viewBox="0 0 250 85" width="100%" height="100%">
+                            <polygon points="12,8 238,8 198,77 52,77" fill="#9A3412" stroke="#431407" stroke-width="4" stroke-linejoin="round"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sm-mast-rect',
+                        name: 'Tall Rectangle',
+                        width: 24,
+                        height: 155,
+                        defaultZ: 10,
+                        svg: `<svg viewBox="0 0 30 180" width="100%" height="100%">
+                            <rect x="8" y="6" width="14" height="168" rx="3" fill="#78350F" stroke="#451A03" stroke-width="3.5"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sm-sail-white',
+                        name: 'Large Square',
+                        width: 85,
+                        height: 85,
+                        defaultZ: 14,
+                        svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+                            <rect x="8" y="8" width="84" height="84" rx="4" fill="#FFFFFF" stroke="#92400E" stroke-width="4"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sm-sail-cream',
+                        name: 'Cream Square',
+                        width: 68,
+                        height: 64,
+                        defaultZ: 14,
+                        svg: `<svg viewBox="0 0 85 80" width="100%" height="100%">
+                            <rect x="8" y="8" width="69" height="64" rx="4" fill="#FEF3C7" stroke="#92400E" stroke-width="4"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sm-sail-tri',
+                        name: 'Right Triangle',
+                        width: 64,
+                        height: 72,
+                        defaultZ: 14,
+                        svg: `<svg viewBox="0 0 80 90" width="100%" height="100%">
+                            <polygon points="10,10 70,80 10,80" fill="#FEF3C7" stroke="#92400E" stroke-width="4" stroke-linejoin="round"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sm-flag-tri',
+                        name: 'Red Triangle',
+                        width: 48,
+                        height: 28,
+                        defaultZ: 20,
+                        svg: `<svg viewBox="0 0 60 36" width="100%" height="100%">
+                            <polygon points="6,6 54,18 6,30" fill="#EF4444" stroke="#991B1B" stroke-width="3.5" stroke-linejoin="round"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sm-stripe-rect',
+                        name: 'Yellow Stripe',
+                        width: 185,
+                        height: 16,
+                        defaultZ: 18,
+                        svg: `<svg viewBox="0 0 210 20" width="100%" height="100%">
+                            <rect x="4" y="3" width="202" height="14" fill="#FACC15"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sm-porthole-circle',
+                        name: 'Small Circle',
+                        width: 22,
+                        height: 22,
+                        defaultZ: 20,
+                        svg: `<svg viewBox="0 0 36 36" width="100%" height="100%">
+                            <circle cx="18" cy="18" r="12" fill="#FEF08A" stroke="#431407" stroke-width="3.5"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sm-ocean-rect',
+                        name: 'Blue Rectangle',
+                        width: 260,
+                        height: 30,
+                        defaultZ: 22,
+                        svg: `<svg viewBox="0 0 290 36" width="100%" height="100%">
+                            <rect x="5" y="4" width="280" height="28" rx="6" fill="#0284C7" stroke="#0369A1" stroke-width="3.5"/>
+                        </svg>`
+                    },
+                    {
+                        id: 'sm-sun-circle',
+                        name: 'Yellow Circle',
+                        width: 56,
+                        height: 56,
+                        defaultZ: 5,
+                        svg: `<svg viewBox="0 0 70 70" width="100%" height="100%">
+                            <circle cx="35" cy="35" r="28" fill="#FACC15" stroke="#CA8A04" stroke-width="4"/>
+                        </svg>`
+                    }
+                ]
+            }
         };
-        if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
-    });
-    if (window.ResizeObserver) new ResizeObserver(layout).observe($('stage')); else window.addEventListener('resize', layout);
-    setMode(S.mode, true);
-}
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
-</script>
+
+        // --- APPLICATION STATE ---
+        let currentMode = 'turkey';
+        let showGuide = false; // Off by default so students recreate from the "Copy This!" card
+        let targetZoomed = false;
+        let selectedElement = null;
+        let highestZ = 50;
+
+        // --- INITIALIZATION ---
+        window.addEventListener('DOMContentLoaded', () => {
+            switchMode('turkey');
+
+            // Deselect piece when clicking empty background on stage
+            const stage = document.getElementById('build-stage');
+            stage.addEventListener('pointerdown', (e) => {
+                if (e.target === stage || e.target.id === 'canvas-layer' || e.target.id === 'silhouette-guide') {
+                    deselectAll();
+                }
+            });
+
+            // Keyboard support (Delete / Backspace / Arrow nudging for Chromebook keyboards)
+            window.addEventListener('keydown', (e) => {
+                if (!selectedElement) return;
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    deleteSelected();
+                } else if (e.key === 'ArrowLeft') {
+                    nudgeSelected(-8, 0);
+                } else if (e.key === 'ArrowRight') {
+                    nudgeSelected(8, 0);
+                } else if (e.key === 'ArrowUp') {
+                    nudgeSelected(0, -8);
+                } else if (e.key === 'ArrowDown') {
+                    nudgeSelected(0, 8);
+                }
+            });
+        });
+
+        // --- SWITCH BETWEEN TURKEY, PILGRIM, AND MAYFLOWER ---
+        function switchMode(mode) {
+            currentMode = mode;
+            const data = GAME_DATA[mode];
+
+            // Update active tab styling
+            ['turkey', 'pilgrim', 'mayflower'].forEach(m => {
+                const btn = document.getElementById(`tab-${m}`);
+                btn.className = (m === mode) ? "btn-kid tab-active" : "btn-kid tab-inactive";
+            });
+
+            // Update tray title, hint text, target preview card, and faint background guide
+            document.getElementById('tray-title').innerHTML = `<span>${data.emoji}</span> ${data.title}`;
+            document.getElementById('mode-emoji').textContent = data.emoji;
+            document.getElementById('mode-hint').textContent = data.hint;
+            document.getElementById('target-preview').innerHTML = data.targetSVG;
+            document.getElementById('silhouette-guide').innerHTML = data.targetSVG;
+
+            // Populate parts palette
+            const container = document.getElementById('parts-container');
+            container.innerHTML = '';
+
+            data.parts.forEach(part => {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = "btn-kid shape-card";
+                card.innerHTML = `
+                    <div class="shape-card-preview">
+                        ${part.svg}
+                    </div>
+                    <span class="shape-card-label">${part.name}</span>
+                `;
+
+                card.addEventListener('click', () => {
+                    spawnPartOnStage(part);
+                });
+
+                container.appendChild(card);
+            });
+
+            clearStage(true);
+            playSound('pop');
+        }
+
+        // --- SPAWN A NEW INTERACTIVE PIECE ONTO THE CANVAS ---
+        function spawnPartOnStage(partData) {
+            const canvasLayer = document.getElementById('canvas-layer');
+            const rect = canvasLayer.getBoundingClientRect();
+
+            // Place near center with slight random offset so multiple clicks don't stack invisibly
+            const offsetX = (Math.random() - 0.5) * 60;
+            const offsetY = (Math.random() - 0.5) * 60;
+            const startX = (rect.width / 2) - (partData.width / 2) + offsetX;
+            const startY = (rect.height / 2) - (partData.height / 2) + offsetY;
+
+            const el = document.createElement('div');
+            el.className = 'draggable-piece';
+            el.style.width = `${partData.width}px`;
+            el.style.height = `${partData.height}px`;
+            el.style.left = `${Math.max(10, Math.min(rect.width - partData.width - 10, startX))}px`;
+            el.style.top = `${Math.max(45, Math.min(rect.height - partData.height - 10, startY))}px`;
+            el.style.zIndex = partData.defaultZ;
+            el.dataset.scale = "1";
+            el.dataset.rotate = "0";
+            el.innerHTML = partData.svg;
+
+            makeDraggable(el);
+            canvasLayer.appendChild(el);
+            selectElement(el);
+            playSound('pop');
+        }
+
+        // --- POINTER DRAG & DROP ENGINE (Works smoothly on Chromebook Touch & Trackpad) ---
+        function makeDraggable(el) {
+            let isDragging = false;
+            let startPointerX = 0;
+            let startPointerY = 0;
+            let initialLeft = 0;
+            let initialTop = 0;
+
+            el.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                selectElement(el);
+
+                isDragging = true;
+                el.classList.add('dragging');
+                el.setPointerCapture(e.pointerId);
+
+                startPointerX = e.clientX;
+                startPointerY = e.clientY;
+                initialLeft = parseFloat(el.style.left) || 0;
+                initialTop = parseFloat(el.style.top) || 0;
+            });
+
+            el.addEventListener('pointermove', (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - startPointerX;
+                const dy = e.clientY - startPointerY;
+
+                const stageRect = document.getElementById('canvas-layer').getBoundingClientRect();
+                let newLeft = initialLeft + dx;
+                let newTop = initialTop + dy;
+
+                // Keep piece inside visible stage boundaries
+                const margin = 20;
+                newLeft = Math.max(-el.offsetWidth + margin, Math.min(stageRect.width - margin, newLeft));
+                newTop = Math.max(-el.offsetHeight + margin, Math.min(stageRect.height - margin, newTop));
+
+                el.style.left = `${newLeft}px`;
+                el.style.top = `${newTop}px`;
+            });
+
+            const endDrag = (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                el.classList.remove('dragging');
+                try {
+                    el.releasePointerCapture(e.pointerId);
+                } catch (_) {}
+                playSound('drop');
+            };
+
+            el.addEventListener('pointerup', endDrag);
+            el.addEventListener('pointercancel', endDrag);
+        }
+
+        // --- SELECTION & TRANSFORMATION CONTROLS ---
+        function selectElement(el) {
+            deselectAll();
+            selectedElement = el;
+            el.classList.add('selected');
+            document.getElementById('item-controls').classList.remove('hidden');
+        }
+
+        function deselectAll() {
+            if (selectedElement) {
+                selectedElement.classList.remove('selected');
+                selectedElement = null;
+            }
+            document.getElementById('item-controls').classList.add('hidden');
+        }
+
+        function updateTransform(el) {
+            const scale = el.dataset.scale || 1;
+            const rotate = el.dataset.rotate || 0;
+            el.style.transform = `scale(${scale}) rotate(${rotate}deg)`;
+        }
+
+        function scaleSelected(factor) {
+            if (!selectedElement) return;
+            let currentScale = parseFloat(selectedElement.dataset.scale) || 1;
+            currentScale = Math.max(0.4, Math.min(2.5, currentScale * factor));
+            selectedElement.dataset.scale = currentScale.toFixed(2);
+            updateTransform(selectedElement);
+            playSound('pop');
+        }
+
+        function rotateSelected(deg) {
+            if (!selectedElement) return;
+            let currentRot = parseFloat(selectedElement.dataset.rotate) || 0;
+            currentRot = (currentRot + deg) % 360;
+            selectedElement.dataset.rotate = currentRot;
+            updateTransform(selectedElement);
+            playSound('pop');
+        }
+
+        function bringForward() {
+            if (!selectedElement) return;
+            highestZ += 1;
+            selectedElement.style.zIndex = highestZ;
+            playSound('pop');
+        }
+
+        function sendBackward() {
+            if (!selectedElement) return;
+            const currentZ = parseInt(selectedElement.style.zIndex) || 10;
+            selectedElement.style.zIndex = Math.max(1, currentZ - 5);
+            playSound('pop');
+        }
+
+        function nudgeSelected(dx, dy) {
+            if (!selectedElement) return;
+            const left = parseFloat(selectedElement.style.left) || 0;
+            const top = parseFloat(selectedElement.style.top) || 0;
+            selectedElement.style.left = `${left + dx}px`;
+            selectedElement.style.top = `${top + dy}px`;
+        }
+
+        function deleteSelected() {
+            if (!selectedElement) return;
+            selectedElement.remove();
+            deselectAll();
+            playSound('delete');
+        }
+
+        // --- STAGE UTILITIES (Guide, Target Zoom, Clear, Celebrate, Download Image) ---
+        function toggleTargetZoom() {
+            targetZoomed = !targetZoomed;
+            const card = document.getElementById('target-card');
+            card.classList.toggle('zoomed', targetZoomed);
+            playSound('pop');
+        }
+
+        function toggleGuide() {
+            showGuide = !showGuide;
+            const guide = document.getElementById('silhouette-guide');
+            const label = document.getElementById('guide-text');
+            guide.classList.toggle('visible', showGuide);
+            label.textContent = showGuide ? "Hide Hints" : "Show Hints";
+            playSound('pop');
+        }
+
+        function clearStage(silent = false) {
+            document.getElementById('canvas-layer').innerHTML = '';
+            deselectAll();
+            if (!silent) {
+                playSound('delete');
+                showToast("Board cleared! Ready to build.");
+            }
+        }
+
+        function celebrateCreation() {
+            deselectAll();
+            playSound('fanfare');
+            showToast("🎉 Fantastic creation! Happy Thanksgiving!");
+            launchNativeConfetti();
+        }
+
+        /**
+         * Exports the student's artwork as a crisp PNG image file to their Chromebook Downloads folder.
+         * Renders all placed SVG elements onto an offscreen HTML5 Canvas.
+         */
+        async function downloadSnapshot() {
+            deselectAll();
+            const stageLayer = document.getElementById('canvas-layer');
+            const pieces = Array.from(stageLayer.querySelectorAll('.draggable-piece'));
+
+            if (pieces.length === 0) {
+                showToast("Add some parts first before saving!");
+                return;
+            }
+
+            showToast("📸 Saving your picture...");
+
+            const rect = stageLayer.getBoundingClientRect();
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = rect.width * 2; // 2x resolution for crisp quality
+            exportCanvas.height = rect.height * 2;
+            const ctx = exportCanvas.getContext('2d');
+            ctx.scale(2, 2);
+
+            // Fill warm autumn background
+            const grad = ctx.createRadialGradient(
+                rect.width / 2, rect.height * 0.45, 20,
+                rect.width / 2, rect.height * 0.45, Math.max(rect.width, rect.height) * 0.7
+            );
+            grad.addColorStop(0, '#FFFBEB');
+            grad.addColorStop(0.65, '#FDE68A');
+            grad.addColorStop(1, '#FCD34D');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, rect.width, rect.height);
+
+            // Sort pieces by visual z-index layer order
+            pieces.sort((a, b) => (parseInt(a.style.zIndex) || 0) - (parseInt(b.style.zIndex) || 0));
+
+            for (const piece of pieces) {
+                const svgEl = piece.querySelector('svg');
+                if (!svgEl) continue;
+
+                const svgClone = svgEl.cloneNode(true);
+                const w = piece.offsetWidth;
+                const h = piece.offsetHeight;
+                svgClone.setAttribute('width', w);
+                svgClone.setAttribute('height', h);
+
+                const svgString = new XMLSerializer().serializeToString(svgClone);
+                const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+                const url = URL.createObjectURL(svgBlob);
+
+                await new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const left = parseFloat(piece.style.left) || 0;
+                        const top = parseFloat(piece.style.top) || 0;
+                        const scale = parseFloat(piece.dataset.scale) || 1;
+                        const rotate = (parseFloat(piece.dataset.rotate) || 0) * Math.PI / 180;
+
+                        ctx.save();
+                        ctx.translate(left + w / 2, top + h / 2);
+                        ctx.rotate(rotate);
+                        ctx.scale(scale, scale);
+                        ctx.drawImage(img, -w / 2, -h / 2, w, h);
+                        ctx.restore();
+
+                        URL.revokeObjectURL(url);
+                        resolve();
+                    };
+                    img.onerror = () => {
+                        URL.revokeObjectURL(url);
+                        resolve();
+                    };
+                    img.src = url;
+                });
+            }
+
+            // Trigger PNG download
+            const link = document.createElement('a');
+            link.download = `my-${currentMode}-creation.png`;
+            link.href = exportCanvas.toDataURL('image/png');
+            link.click();
+
+            playSound('fanfare');
+            showToast("✅ Saved to your Chromebook!");
+        }
+    </script>
 </body>
 </html>
