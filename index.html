@@ -1,6 +1,9 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Thanksgiving Shape Challenge</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;600&display=swap">
 <style>
 /* Layout: one-screen app. Header + level bar on top, shape tray beside (or below) a free-form build stage. */
@@ -224,7 +227,8 @@ button { cursor: pointer; }
 @media (max-width: 520px) { .top h1 { display: none; } .top { justify-content: center; } }
 @media (prefers-reduced-motion: reduce) { .btn, #ghost { transition: none; } .btn.ready, .piece.wiggle svg, .piece.count svg { animation: none; } }
 </style>
-<!--BODY-->
+</head>
+<body>
 <header class="top">
     <h1>🔷 Thanksgiving Shape Challenge</h1>
     <nav class="tabs" aria-label="Pictures to build">
@@ -572,7 +576,7 @@ function undo() {
 function addPart(part) {
     remember();
     const m = M(), j = () => (Math.random() - 0.5) * 50;
-    const p = { id: uid++, part: part.id, x: m.W / 2 + j(), y: m.H / 2 + j(), rot: 0, flip: false, s: 1, z: part.z };
+    const p = { id: uid++, part: part.id, x: m.W / 2 + j(), y: m.H / 2 + j(), rot: 0, flip: false, s: 1, z: Math.max(0, ...board().map(q => q.z)) + 1 };
     clampToStage(p);
     board().push(p); sel = p.id;
     changed(true); SFX.pop(); say(part.name);
@@ -614,7 +618,7 @@ function trySnap(p) {
         if (d < bestD) { best = s; bestD = d; }
     }
     if (!best) return false;
-    Object.assign(p, { x: best.x, y: best.y, rot: (best.rot + 360) % 360, flip: best.flip, s: 1 });
+    Object.assign(p, { x: best.x, y: best.y, rot: (best.rot + 360) % 360, flip: best.flip, s: 1, z: M().byId[p.part].z - 100 });
     return true;
 }
 function wireDrag(el, id) {
@@ -898,5 +902,5 @@ function init() {
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 </script>
-
-</body></html>
+</body>
+</html>
