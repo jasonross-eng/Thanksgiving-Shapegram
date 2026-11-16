@@ -1,0 +1,902 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Thanksgiving Shape Challenge</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;600&display=swap">
+<style>
+/* Layout: one-screen app. Header + level bar on top, shape tray beside (or below) a free-form build stage. */
+:root {
+    --bg: #FEF3C7;            /* page ground, warm amber */
+    --stage: #FFFBEB;         /* build surface */
+    --stage-dot: #F2B544;
+    --panel: #FFF8E1;         /* tray + level bar */
+    --panel-line: #FCD34D;
+    --card: #FFFFFF;
+    --ink: #451A03;           /* text */
+    --ink-soft: #92400E;
+    --brand: #D97706;         /* header */
+    --brand-deep: #B45309;
+    --accent: #F97316;        /* selection, active tab */
+    --go: #059669;
+    --stop: #DC2626;
+    --sky: #0284C7;
+    --on-dark: #FFFFFF;
+    --shadow: rgba(69, 26, 3, .2);
+    --font-display: 'Fredoka', 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color-scheme: light;
+}
+html, body { height: 100%; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+    margin: 0; display: flex; flex-direction: column; overflow: hidden;
+    background: var(--bg); color: var(--ink);
+    font-family: var(--font-body); font-size: 14px;
+    -webkit-user-select: none; user-select: none;
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+
+/* Tactile buttons */
+.btn {
+    font-family: var(--font-display); font-weight: 600; line-height: 1;
+    border: 2px solid transparent; border-radius: 14px; padding: 8px 12px;
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+    background: var(--card); color: var(--ink);
+    box-shadow: 0 3px 0 var(--shadow);
+    transition: transform .12s, box-shadow .12s;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 0 var(--shadow); }
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--shadow); }
+.btn[disabled] { opacity: .45; cursor: default; transform: none; box-shadow: 0 3px 0 var(--shadow); }
+.btn.go { background: var(--go); color: var(--on-dark); }
+.btn.stop { background: var(--stop); color: var(--on-dark); }
+.btn.sky { background: var(--sky); color: var(--on-dark); }
+.btn.plain { background: var(--card); border-color: var(--panel-line); }
+.btn.ready { animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.08); } }
+
+/* Header */
+.top {
+    background: var(--brand); color: var(--on-dark); flex: none;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px;
+    padding-block: 8px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.top h1 { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin: 0; letter-spacing: .3px; }
+.tabs, .actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tab { background: var(--brand-deep); color: var(--on-dark); }
+.tab[aria-pressed="true"] { background: var(--accent); border-color: var(--on-dark); }
+
+/* Level bar */
+.bar {
+    flex: none; background: var(--panel); border-bottom: 2px solid var(--panel-line);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px;
+    padding-block: 6px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.bar .group { display: flex; align-items: center; gap: 6px; }
+.bar label, .bar .lbl { font-family: var(--font-display); font-weight: 600; color: var(--ink-soft); }
+.seg { display: inline-flex; border: 2px solid var(--panel-line); border-radius: 12px; overflow: hidden; background: var(--card); }
+.seg button { border: 0; background: transparent; padding: 6px 12px; font-family: var(--font-display); font-weight: 600; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-dark); }
+.bar .btn { padding: 6px 10px; border-radius: 12px; }
+#level-tip { color: var(--ink-soft); }
+#name-input {
+    width: 150px; max-width: 40vw; padding: 6px 10px; border-radius: 12px;
+    border: 2px solid var(--panel-line); background: var(--card);
+    -webkit-user-select: text; user-select: text;
+}
+#progress { margin-left: auto; font-family: var(--font-display); font-weight: 600; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+/* Workspace */
+.work { flex: 1; min-height: 0; display: flex; }
+.tray {
+    flex: none; width: 250px; background: var(--panel); border-right: 3px solid var(--panel-line);
+    display: flex; flex-direction: column; min-height: 0;
+}
+.tray h2 {
+    margin: 0; padding: 8px 12px; font-family: var(--font-display); font-size: 16px; font-weight: 700;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--panel-line);
+}
+.tray h2 small { font-family: var(--font-body); font-size: 11px; font-weight: 600; color: var(--ink-soft); }
+#parts {
+    flex: 1; min-height: 0; overflow-y: auto; padding: 10px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-content: start;
+    touch-action: pan-y;
+}
+.part {
+    position: relative; background: var(--card); border: 2px solid var(--panel-line); border-radius: 14px;
+    padding: 6px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    box-shadow: 0 3px 0 var(--shadow); min-width: 0;
+}
+.part:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--shadow); }
+.part svg { width: 56px; height: 56px; pointer-events: none; }
+.part span.nm { font-family: var(--font-display); font-weight: 600; font-size: 12px; text-align: center; line-height: 1.15; }
+.part .left {
+    position: absolute; top: 4px; right: 4px; min-width: 24px; padding: 2px 5px; border-radius: 10px;
+    background: var(--accent); color: var(--on-dark);
+    font-family: var(--font-display); font-weight: 700; font-size: 12px; text-align: center; font-variant-numeric: tabular-nums;
+}
+.part.done { opacity: .6; }
+.part.done .left { background: var(--go); }
+
+.stage {
+    flex: 1; min-width: 0; position: relative; overflow: hidden;
+    background-color: var(--stage);
+    background-image: radial-gradient(var(--stage-dot) 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+#world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+#ghost { position: absolute; inset: 0; opacity: 0; transition: opacity .3s; pointer-events: none; }
+#ghost.on { opacity: .22; }
+#ghost svg { width: 100%; height: 100%; display: block; overflow: visible; }
+#empty-tip {
+    position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%); width: max-content; max-width: 80%;
+    text-align: center; color: var(--ink-soft); font-family: var(--font-display); font-weight: 600; font-size: 16px;
+    background: var(--card); border: 2px dashed var(--panel-line); border-radius: 14px; padding: 8px 14px; pointer-events: none;
+}
+
+.piece { position: absolute; cursor: grab; touch-action: none; border-radius: 6px; }
+.piece::before { content: ""; position: absolute; inset: -5px; }   /* bigger touch target for tiny shapes */
+.piece svg { position: relative; display: block; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.piece:hover svg { filter: drop-shadow(0 2px 3px var(--shadow)); }
+.piece.drag { cursor: grabbing; }
+.piece.drag svg { filter: drop-shadow(0 6px 6px var(--shadow)); }
+.piece.sel { outline: 2px dashed var(--accent); outline-offset: 3px; }
+.piece:focus-visible { outline: 2px dashed var(--sky); outline-offset: 3px; }
+.piece.wiggle svg { animation: wiggle .35s ease-in-out 4; }
+.piece.count svg { animation: glow .8s ease-in-out infinite; }
+@keyframes wiggle { 25% { transform: rotate(-7deg); } 75% { transform: rotate(7deg); } }
+@keyframes glow { 50% { filter: drop-shadow(0 0 5px var(--sky)) drop-shadow(0 0 2px var(--sky)); } }
+
+/* Copy This card */
+#target {
+    position: absolute; top: 12px; right: calc(12px + env(safe-area-inset-right, 0px)); width: 200px; z-index: 5;
+    background: var(--card); border: 3px solid var(--accent); border-radius: 16px; padding: 8px;
+    box-shadow: 0 4px 10px var(--shadow); display: flex; flex-direction: column; gap: 6px;
+}
+#target.big { width: min(340px, 70%); }
+#target header { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-family: var(--font-display); font-weight: 700; color: var(--brand-deep); }
+#target header div { display: flex; gap: 4px; }
+#target header button { border: 0; border-radius: 8px; background: var(--bg); padding: 3px 7px; font-weight: 700; }
+#target-pic { background: var(--stage); border: 1px solid var(--panel-line); border-radius: 10px; padding: 4px; }
+#target-pic svg { display: block; width: 100%; height: auto; }
+#target.min #target-pic, #target.min #look-bar { display: none; }
+#target.min { width: auto; }
+#target.gone #target-pic { display: none; }
+#target.gone { width: auto; }
+#memory-note { display: none; font-family: var(--font-display); font-weight: 600; color: var(--ink-soft); }
+#target.gone #memory-note { display: block; }
+#look-bar { height: 6px; border-radius: 3px; background: var(--bg); overflow: hidden; }
+#look-bar i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; }
+
+/* Selected-shape toolbar */
+#tools {
+    position: absolute; left: 50%; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 6;
+    max-width: calc(100% - 16px);
+    background: var(--card); border: 2px solid var(--accent); border-radius: 16px; padding: 6px 8px;
+    box-shadow: 0 6px 16px var(--shadow); display: flex; flex-direction: column; align-items: center; gap: 5px;
+}
+#tool-name { font-family: var(--font-display); font-weight: 600; text-align: center; }
+#tool-name b { color: var(--brand-deep); }
+#tools .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; }
+#tools .btn { padding: 7px 9px; border-radius: 11px; background: var(--bg); font-size: 13px; }
+#tools .btn.stop { background: var(--stop); }
+
+#toast {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 8; max-width: 86%;
+    background: var(--ink); color: var(--on-dark); padding: 9px 18px; border-radius: 999px;
+    font-family: var(--font-display); font-weight: 600; font-size: 15px; text-align: center; box-shadow: 0 4px 12px var(--shadow);
+}
+#confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 7; }
+
+/* Dialog */
+#modal { position: fixed; inset: 0; z-index: 20; background: rgba(69, 26, 3, .45); display: flex; align-items: center; justify-content: center; padding: 16px; }
+#modal .box { background: var(--card); border: 3px solid var(--accent); border-radius: 20px; padding: 20px; max-width: 420px; width: 100%; text-align: center; box-shadow: 0 10px 30px var(--shadow); }
+#modal h3 { font-family: var(--font-display); font-size: 22px; margin: 0 0 6px; text-wrap: balance; }
+#modal p { margin: 0 0 14px; color: var(--ink-soft); font-size: 15px; }
+#modal .choices { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+#modal .choices .btn { font-size: 18px; padding: 12px 18px; background: var(--bg); border-color: var(--panel-line); }
+#modal .choices .btn.num { font-size: 24px; min-width: 62px; justify-content: center; }
+#modal .choices .btn.go { background: var(--go); }
+#modal .choices .btn.stop { background: var(--stop); }
+
+@media (max-width: 760px) {
+    .top h1 { font-size: 17px; }
+    .work { flex-direction: column-reverse; }
+    .tray { width: auto; border-right: 0; border-top: 3px solid var(--panel-line); }
+    .tray h2 { padding: 4px 16px; font-size: 14px; }
+    #parts {
+        display: flex; overflow-x: auto; overflow-y: hidden; touch-action: pan-x; padding-block: 8px 10px;
+        padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+    }
+    .part { flex: none; width: 88px; }
+    .part svg { width: 44px; height: 44px; }
+    #target { width: 118px; padding: 5px; }
+    #level-tip, .btn .t { display: none; }
+    #empty-tip { font-size: 14px; }
+}
+@media (max-width: 520px) { .top h1 { display: none; } .top { justify-content: center; } }
+@media (prefers-reduced-motion: reduce) { .btn, #ghost { transition: none; } .btn.ready, .piece.wiggle svg, .piece.count svg { animation: none; } }
+</style>
+<!--BODY-->
+<header class="top">
+    <h1>🔷 Thanksgiving Shape Challenge</h1>
+    <nav class="tabs" aria-label="Pictures to build">
+        <button class="btn tab" id="tab-turkey" data-mode="turkey">🦃 Turkey</button>
+        <button class="btn tab" id="tab-pilgrim" data-mode="pilgrim">👒 Pilgrim</button>
+        <button class="btn tab" id="tab-mayflower" data-mode="mayflower">⛵ Mayflower</button>
+    </nav>
+    <div class="actions">
+        <button class="btn plain" id="btn-undo" title="Undo (Ctrl+Z)">↩️ <span class="t">Undo</span></button>
+        <button class="btn stop" id="btn-reset" title="Start over">🔄 <span class="t">Reset</span></button>
+        <button class="btn go" id="btn-done" title="Check my picture">✅ <span class="t">Done!</span></button>
+        <button class="btn sky" id="btn-save" title="Save a picture">📸 <span class="t">Save</span></button>
+        <button class="btn plain" id="btn-sound" title="Sound on or off" aria-pressed="true">🔊</button>
+    </div>
+</header>
+
+<div class="bar">
+    <div class="group">
+        <span class="lbl" id="lvl-lbl">Level</span>
+        <div class="seg" role="group" aria-labelledby="lvl-lbl">
+            <button id="lvl-easy" data-level="easy">Easy</button>
+            <button id="lvl-medium" data-level="medium">Medium</button>
+            <button id="lvl-hard" data-level="hard">Hard</button>
+        </div>
+        <span id="level-tip"></span>
+    </div>
+    <button class="btn plain" id="btn-hint">👻 <span id="hint-text">Show outline</span></button>
+    <button class="btn plain" id="btn-peek" hidden>👀 Peek</button>
+    <div class="group">
+        <label for="name-input">Name</label>
+        <input id="name-input" type="text" maxlength="24" placeholder="Your name" autocomplete="off">
+    </div>
+    <div id="progress" aria-live="polite"></div>
+</div>
+
+<main class="work">
+    <aside class="tray">
+        <h2><span id="tray-title">Shapes</span> <small>Tap to add</small></h2>
+        <div id="parts"></div>
+    </aside>
+
+    <section class="stage" id="stage" aria-label="Build area">
+        <div id="world"><div id="ghost"></div></div>
+        <div id="empty-tip">Tap a shape to add it. Then drag it into place!</div>
+
+        <div id="target">
+            <header>
+                <span>🎯 Copy this!</span>
+                <div>
+                    <button id="btn-zoom" title="Make the picture bigger or smaller" aria-label="Zoom picture">🔍</button>
+                    <button id="btn-min" title="Hide or show the picture" aria-label="Hide or show picture">▾</button>
+                </div>
+            </header>
+            <div id="target-pic"></div>
+            <div id="look-bar" hidden><i></i></div>
+            <div id="memory-note">Hidden! Build it from memory.</div>
+        </div>
+
+        <div id="tools" hidden>
+            <div id="tool-name"></div>
+            <div class="row">
+                <button class="btn" data-act="rotL" title="Turn left (Shift+R)">↺ <span class="t">Turn</span></button>
+                <button class="btn" data-act="rotR" title="Turn right (R)">↻ <span class="t">Turn</span></button>
+                <button class="btn" data-act="flip" title="Flip (F)">↔️ <span class="t">Flip</span></button>
+                <button class="btn" data-act="bigger" title="Bigger (+)">➕</button>
+                <button class="btn" data-act="smaller" title="Smaller (-)">➖</button>
+                <button class="btn" data-act="front" title="Bring to front (])">⬆️ <span class="t">Front</span></button>
+                <button class="btn" data-act="back" title="Send to back ([)">⬇️ <span class="t">Back</span></button>
+                <button class="btn stop" data-act="del" title="Remove (Delete)">🗑️</button>
+            </div>
+        </div>
+
+        <div id="toast" role="status" aria-live="polite" hidden></div>
+        <canvas id="confetti"></canvas>
+    </section>
+</main>
+
+<div id="modal" hidden><div class="box" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h3 id="modal-title"></h3><p id="modal-text"></p><div class="choices" id="modal-choices"></div>
+</div></div>
+
+<script>
+/**
+ * THANKSGIVING SHAPE CHALLENGE
+ * Single file, no libraries. Each picture is described once (parts + slots);
+ * the "Copy this!" card, the outline, the tray, the answer check and the saved image all come from that data.
+ * Positions are stored in picture units, so a build survives window resizes and reloads.
+ */
+
+// ---------- shape helpers (all drawn centred on 0,0) ----------
+const circ = (r, f, s, sw = 3) => `<circle r="${r}" fill="${f}" stroke="${s}" stroke-width="${sw}"/>`;
+const rect = (w, h, f, s, sw = 3, rx = 0) => `<rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="${rx}" fill="${f}" stroke="${s}" stroke-width="${sw}"/>`;
+const poly = (pts, f, s, sw = 3) => `<polygon points="${pts}" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="round"/>`;
+const path = (d, f, s, sw = 3) => `<path d="${d}" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="round"/>`;
+const feather = (f, s) => poly('0,55 -32,-55 32,-55', f, s);
+const fan = a => [160 + 55 * Math.sin(a * Math.PI / 180), 155 - 55 * Math.cos(a * Math.PI / 180), a];
+
+const KIND = {
+    circle:        { plural: 'circles',      fact: 'round, with 0 corners' },
+    triangle:      { plural: 'triangles',    fact: '3 sides and 3 corners' },
+    rectangle:     { plural: 'rectangles',   fact: '4 sides and 4 square corners' },
+    square:        { plural: 'squares',      fact: '4 equal sides' },
+    trapezoid:     { plural: 'trapezoids',   fact: '4 sides, 2 of them parallel' },
+    'half circle': { plural: 'half circles', fact: '1 straight side and 1 curved side' },
+    oval:          { plural: 'ovals',        fact: 'a stretched circle, 0 corners' }
+};
+
+// part: [id, name, kind, width, height, layer, svg]   slot: [partId, x, y, turn, flipped]
+const MODES = {
+    turkey: {
+        label: 'Turkey', emoji: '🦃', W: 320, H: 300,
+        parts: [
+            ['body', 'Large Circle', 'circle', 116, 116, 6, circ(58, '#7C2D12', '#431407', 3.5)],
+            ['head', 'Medium Circle', 'circle', 64, 64, 8, circ(32, '#9A3412', '#431407', 3.5)],
+            ['wing', 'Half Circle', 'half circle', 30, 60, 7, path('M15,-30 A30 30 0 0 0 15,30 Z', '#9A3412', '#431407')],
+            ['f-red', 'Red Triangle', 'triangle', 64, 110, 2, feather('#DC2626', '#7F1D1D')],
+            ['f-orange', 'Orange Triangle', 'triangle', 64, 110, 2, feather('#F97316', '#9A3412')],
+            ['f-yellow', 'Yellow Triangle', 'triangle', 64, 110, 2, feather('#EAB308', '#854D0E')],
+            ['f-teal', 'Teal Triangle', 'triangle', 64, 110, 2, feather('#0D9488', '#115E59')],
+            ['beak', 'Small Triangle', 'triangle', 24, 18, 11, poly('-12,-9 12,-9 0,9', '#FACC15', '#A16207', 2.5)],
+            ['wattle', 'Red Oval', 'oval', 12, 24, 9, `<ellipse rx="6" ry="12" fill="#EF4444" stroke="#991B1B" stroke-width="2"/>`],
+            ['eye', 'Eye Circle', 'circle', 14, 14, 10, circ(7, '#FFFFFF', '#1E293B', 2) + `<circle r="3" fill="#0F172A"/>`],
+            ['leg', 'Thin Rectangle', 'rectangle', 12, 44, 4, rect(12, 44, '#F59E0B', '#B45309', 2.5, 4)],
+            ['foot', 'Wide Triangle', 'triangle', 36, 20, 5, poly('0,-10 -18,10 18,10', '#F59E0B', '#B45309', 2.5)]
+        ],
+        slots: [
+            ['f-red', ...fan(-60)], ['f-orange', ...fan(-30)], ['f-yellow', ...fan(0)], ['f-orange', ...fan(30)], ['f-teal', ...fan(60)],
+            ['leg', 140, 254], ['leg', 180, 254], ['foot', 140, 274], ['foot', 180, 274],
+            ['body', 160, 185], ['wing', 87, 185], ['wing', 233, 185, 0, true],
+            ['head', 160, 118], ['eye', 149, 110], ['eye', 171, 110], ['wattle', 169, 136], ['beak', 160, 131]
+        ]
+    },
+    pilgrim: {
+        label: 'Pilgrim', emoji: '👒', W: 300, H: 320,
+        parts: [
+            ['coat', 'Large Trapezoid', 'trapezoid', 128, 110, 5, poly('-42,-55 42,-55 64,55 -64,55', '#1E293B', '#0F172A', 3.5)],
+            ['head', 'Peach Circle', 'circle', 68, 68, 6, circ(34, '#FDBA74', '#9A3412')],
+            ['crown', 'Dark Rectangle', 'rectangle', 70, 52, 10, rect(70, 52, '#1E293B', '#0F172A', 3, 4)],
+            ['brim', 'Long Rectangle', 'rectangle', 136, 14, 11, rect(136, 14, '#1E293B', '#0F172A', 3, 6)],
+            ['band', 'White Rectangle', 'rectangle', 70, 12, 11, rect(70, 12, '#F8FAFC', '#94A3B8', 2)],
+            ['buckle', 'Yellow Square', 'square', 20, 20, 12, rect(20, 20, '#FACC15', '#A16207', 2.5)],
+            ['collar', 'White Triangle', 'triangle', 64, 34, 7, poly('-32,-17 32,-17 0,17', '#F8FAFC', '#94A3B8', 2.5)],
+            ['belt', 'Brown Rectangle', 'rectangle', 106, 14, 7, rect(106, 14, '#78350F', '#451A03', 2)],
+            ['arm', 'Sleeve Rectangle', 'rectangle', 44, 20, 3, rect(44, 20, '#334155', '#0F172A', 3, 6)],
+            ['hand', 'Small Circle', 'circle', 20, 20, 4, circ(10, '#FDBA74', '#9A3412', 2.5)],
+            ['legp', 'Short Rectangle', 'rectangle', 22, 28, 3, rect(22, 28, '#334155', '#0F172A')],
+            ['shoe', 'Black Half Circle', 'half circle', 42, 21, 4, path('M-21,10.5 A21 21 0 0 1 21,10.5 Z', '#0F172A', '#0F172A', 1)],
+            ['dot', 'Tiny Circle', 'circle', 8, 8, 9, circ(4, '#0F172A', '#0F172A', 0)],
+            ['smile', 'Red Half Circle', 'half circle', 24, 12, 9, path('M-12,-6 A12 12 0 0 0 12,-6 Z', '#EF4444', '#991B1B', 1.5)]
+        ],
+        slots: [
+            ['arm', 87, 172, -15], ['arm', 213, 172, 15], ['legp', 127, 278], ['legp', 173, 278],
+            ['hand', 64, 179], ['hand', 236, 179], ['shoe', 125, 293.5], ['shoe', 175, 293.5],
+            ['coat', 150, 209], ['head', 150, 116], ['collar', 150, 171], ['belt', 150, 219],
+            ['dot', 139, 110], ['dot', 161, 110], ['smile', 150, 130],
+            ['crown', 150, 44], ['band', 150, 60], ['brim', 150, 75], ['buckle', 150, 60], ['buckle', 150, 219]
+        ]
+    },
+    mayflower: {
+        label: 'Mayflower', emoji: '⛵', W: 320, H: 300,
+        parts: [
+            ['hull', 'Hull Trapezoid', 'trapezoid', 224, 61, 6, poly('-112,-30.5 112,-30.5 74,30.5 -74,30.5', '#9A3412', '#431407', 3.5)],
+            ['mast', 'Tall Rectangle', 'rectangle', 10, 150, 2, rect(10, 150, '#78350F', '#451A03', 2.5)],
+            ['sail-lg', 'Large Square', 'square', 72, 72, 4, rect(72, 72, '#FFFFFF', '#92400E', 3, 4)],
+            ['sail-sm', 'Cream Square', 'square', 56, 56, 4, rect(56, 56, '#FEF3C7', '#92400E', 3, 4)],
+            ['sail-tri', 'Cream Triangle', 'triangle', 45, 58, 4, poly('-22.5,-29 22.5,29 -22.5,29', '#FEF3C7', '#92400E')],
+            ['flag', 'Red Triangle', 'triangle', 36, 20, 5, poly('-18,-10 18,0 -18,10', '#EF4444', '#991B1B', 2.5)],
+            ['stripe', 'Yellow Stripe', 'rectangle', 192, 10, 7, rect(192, 10, '#FACC15', '#CA8A04', 1)],
+            ['port', 'Small Circle', 'circle', 14, 14, 8, circ(7, '#FEF08A', '#431407', 2)],
+            ['ocean', 'Blue Rectangle', 'rectangle', 280, 26, 9, rect(280, 26, '#0284C7', '#0369A1', 2.5, 6)],
+            ['sun', 'Yellow Circle', 'circle', 48, 48, 1, circ(24, '#FACC15', '#CA8A04')]
+        ],
+        slots: [
+            ['sun', 58, 54], ['mast', 111, 137], ['mast', 172, 120], ['mast', 233, 145],
+            ['sail-sm', 111, 123], ['sail-lg', 172, 110], ['sail-tri', 255.5, 125], ['flag', 190, 48],
+            ['hull', 160, 225.5], ['stripe', 160, 217], ['port', 115, 236], ['port', 160, 236], ['port', 205, 236],
+            ['ocean', 160, 269]
+        ]
+    }
+};
+for (const m of Object.values(MODES)) {
+    m.parts = m.parts.map(([id, name, kind, w, h, z, svg]) => ({ id, name, kind, w, h, z, svg }));
+    m.byId = Object.fromEntries(m.parts.map(p => [p.id, p]));
+    m.slots = m.slots.map(([part, x, y, rot = 0, flip = false]) => ({ part, x, y, rot, flip }));
+    m.parts.forEach(p => p.need = m.slots.filter(s => s.part === p.id).length);
+}
+const LEVELS = {
+    easy:   'Shapes snap into the outline.',
+    medium: 'Copy the picture.',
+    hard:   'Look, then build it from memory.'
+};
+
+// ---------- state ----------
+const STORE = 'thanksgiving-shape-challenge-v2';
+const S = { mode: 'turkey', level: 'medium', name: '', sound: true, boards: { turkey: [], pilgrim: [], mayflower: [] } };
+const undoStack = { turkey: [], pilgrim: [], mayflower: [] };
+let sel = null, hintsOn = false, uid = 1, view = { u: 1, ox: 0, oy: 0 }, lookTimer = null, hadGesture = false;
+
+try {
+    const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+    if (saved && saved.boards) {
+        for (const k of Object.keys(MODES)) {
+            S.boards[k] = (saved.boards[k] || []).filter(p => MODES[k].byId[p.part]);
+            S.boards[k].forEach(p => { p.id = uid++; });
+        }
+        if (MODES[saved.mode]) S.mode = saved.mode;
+        if (LEVELS[saved.level]) S.level = saved.level;
+        S.name = String(saved.name || '').slice(0, 24);
+        S.sound = saved.sound !== false;
+    }
+} catch (_) {}
+function persist() { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (_) {} }
+
+const $ = id => document.getElementById(id);
+const M = () => MODES[S.mode];
+const board = () => S.boards[S.mode];
+const pieceOf = id => board().find(p => p.id === id);
+const elOf = id => $('world').querySelector(`[data-id="${id}"]`);
+
+// ---------- sound (Web Audio, nothing to download) ----------
+let ac = null;
+function tone(freq, dur = 0.12, at = 0) {
+    if (!S.sound || !hadGesture) return;
+    try {
+        ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+        if (ac.state === 'suspended') ac.resume();
+        const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + at;
+        o.type = 'triangle'; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.16, t + 0.015);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + dur + 0.03);
+    } catch (_) {}
+}
+const SFX = {
+    pop: () => tone(523), drop: () => tone(392), del: () => tone(165, 0.16), oops: () => { tone(247, 0.14); tone(208, 0.18, 0.12); },
+    snap: () => { tone(659, 0.08); tone(880, 0.12, 0.07); },
+    fanfare: () => [262, 330, 392, 523].forEach((f, i) => tone(f, i === 3 ? 0.4 : 0.16, i * 0.12))
+};
+function say(text) {
+    if (!S.sound || !hadGesture || !('speechSynthesis' in window)) return;
+    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.rate = 0.95; speechSynthesis.speak(u); } catch (_) {}
+}
+
+// ---------- drawing ----------
+const tf = p => `rotate(${p.rot}) scale(${(p.flip ? -1 : 1) * p.s} ${p.s})`;
+function boardSVG(mode, pieces) {
+    const m = MODES[mode];
+    return pieces.map((p, i) => [p, i]).sort((a, b) => a[0].z - b[0].z || a[1] - b[1])
+        .map(([p]) => `<g transform="translate(${p.x} ${p.y}) ${tf(p)}">${m.byId[p.part].svg}</g>`).join('');
+}
+function targetSVG(mode) {
+    const m = MODES[mode];
+    const pieces = m.slots.map(s => ({ ...s, s: 1, z: m.byId[s.part].z }));
+    return `<svg viewBox="0 0 ${m.W} ${m.H}" role="img" aria-label="${m.label} made of shapes">${boardSVG(mode, pieces)}</svg>`;
+}
+const PAD = 3;
+function placeEl(el, p) {
+    const part = M().byId[p.part];
+    el.style.left = (p.x - part.w / 2 - PAD) + 'px';
+    el.style.top = (p.y - part.h / 2 - PAD) + 'px';
+    el.style.transform = `rotate(${p.rot}deg) scale(${(p.flip ? -1 : 1) * p.s}, ${p.s})`;
+    el.style.zIndex = 1000 + p.z;
+}
+function makeEl(p) {
+    const part = M().byId[p.part], w = part.w + PAD * 2, h = part.h + PAD * 2;
+    const el = document.createElement('div');
+    el.className = 'piece'; el.dataset.id = p.id; el.tabIndex = 0;
+    el.setAttribute('role', 'button'); el.setAttribute('aria-label', part.name + '. Arrow keys move it.');
+    el.style.width = w + 'px'; el.style.height = h + 'px';
+    el.innerHTML = `<svg viewBox="${-w / 2} ${-h / 2} ${w} ${h}">${part.svg}</svg>`;
+    placeEl(el, p);
+    wireDrag(el, p.id);
+    el.addEventListener('focus', () => select(p.id));
+    return el;
+}
+function renderPieces() {
+    const world = $('world'), refocus = document.activeElement && document.activeElement.classList.contains('piece');
+    world.querySelectorAll('.piece').forEach(e => e.remove());
+    board().forEach(p => world.appendChild(makeEl(p)));
+    if (sel != null && !pieceOf(sel)) sel = null;
+    showSelection();
+    if (refocus && sel != null) elOf(sel).focus({ preventScroll: true });
+    updateCounts();
+}
+function updateCounts() {
+    const m = M(), b = board();
+    let placed = 0;
+    m.parts.forEach(part => {
+        const have = b.filter(p => p.part === part.id).length, left = Math.max(0, part.need - have);
+        placed += Math.min(have, part.need);
+        const card = $('part-' + part.id);
+        card.classList.toggle('done', left === 0);
+        card.querySelector('.left').textContent = left === 0 ? '✓' : '×' + left;
+        card.setAttribute('aria-label', `Add ${part.name}. ${left} more needed.`);
+    });
+    $('progress').textContent = `${placed} of ${m.slots.length} shapes placed`;
+    $('btn-done').classList.toggle('ready', placed === m.slots.length);
+    $('btn-undo').disabled = undoStack[S.mode].length === 0;
+    $('empty-tip').hidden = b.length > 0;
+}
+function showSelection() {
+    $('world').querySelectorAll('.piece.sel').forEach(e => e.classList.remove('sel'));
+    const p = sel != null && pieceOf(sel);
+    $('tools').hidden = !p;
+    if (!p) return;
+    elOf(sel).classList.add('sel');
+    const part = M().byId[p.part];
+    $('tool-name').innerHTML = `<b>${part.name}</b> · ${KIND[part.kind].fact}`;
+}
+function select(id) { if (sel !== id) { sel = id; showSelection(); } }
+function deselect() { sel = null; showSelection(); }
+
+// Fit the picture into the free part of the stage (clear of the Copy This card and the toolbar).
+function layout() {
+    const st = $('stage'), m = M(), sw = st.clientWidth, sh = st.clientHeight;
+    if (!sw || !sh) return;
+    const wide = sw >= 640, cardW = wide ? $('target').offsetWidth + 24 : 0;
+    const left = 16, top = 16, aw = sw - 32 - cardW, ah = sh - top - 76;
+    const u = Math.max(0.45, Math.min(aw / m.W, ah / m.H, 2.2));
+    view = { u, ox: left + (aw - m.W * u) / 2, oy: top + Math.max(0, (ah - m.H * u) / 2) };
+    const w = $('world');
+    w.style.width = m.W + 'px'; w.style.height = m.H + 'px';
+    w.style.transform = `translate(${view.ox}px, ${view.oy}px) scale(${u})`;
+}
+function clampToStage(p) {
+    const st = $('stage'), { u, ox, oy } = view;
+    p.x = Math.max((8 - ox) / u, Math.min((st.clientWidth - 8 - ox) / u, p.x));
+    p.y = Math.max((8 - oy) / u, Math.min((st.clientHeight - 8 - oy) / u, p.y));
+}
+
+// ---------- editing ----------
+function remember(snapshot) {
+    const stack = undoStack[S.mode];
+    stack.push(snapshot || JSON.stringify(board()));
+    if (stack.length > 60) stack.shift();
+}
+function changed(full) { full ? renderPieces() : updateCounts(); persist(); }
+function undo() {
+    const snap = undoStack[S.mode].pop();
+    if (!snap) return;
+    S.boards[S.mode] = JSON.parse(snap);
+    changed(true); SFX.pop(); toast('Undone!');
+}
+function addPart(part) {
+    remember();
+    const m = M(), j = () => (Math.random() - 0.5) * 50;
+    const p = { id: uid++, part: part.id, x: m.W / 2 + j(), y: m.H / 2 + j(), rot: 0, flip: false, s: 1, z: part.z };
+    clampToStage(p);
+    board().push(p); sel = p.id;
+    changed(true); SFX.pop(); say(part.name);
+}
+function act(name) {
+    const p = sel != null && pieceOf(sel);
+    if (!p) return;
+    remember();
+    const zs = board().map(q => q.z);
+    if (name === 'rotR') p.rot = (p.rot + 15) % 360;
+    else if (name === 'rotL') p.rot = (p.rot + 345) % 360;
+    else if (name === 'flip') p.flip = !p.flip;
+    else if (name === 'bigger' || name === 'smaller') {
+        const k = Math.round(Math.log(p.s) / Math.log(1.1)) + (name === 'bigger' ? 1 : -1);
+        p.s = +Math.pow(1.1, Math.max(-7, Math.min(7, k))).toFixed(4);
+    }
+    else if (name === 'front') p.z = Math.max(...zs) + 1;
+    else if (name === 'back') p.z = Math.min(...zs) - 1;
+    else if (name === 'del') {
+        S.boards[S.mode] = board().filter(q => q !== p); sel = null;
+        changed(true); SFX.del(); return;
+    }
+    placeEl(elOf(p.id), p); changed(false); SFX.pop();
+}
+function nudge(dx, dy) {
+    const p = sel != null && pieceOf(sel);
+    if (!p) return;
+    remember(); p.x += dx; p.y += dy; clampToStage(p);
+    placeEl(elOf(p.id), p); changed(false);
+}
+// Easy level: a shape dropped near its place in the outline jumps into it, turned the right way.
+function trySnap(p) {
+    const b = board();
+    let best = null, bestD = 34;
+    for (const s of M().slots) {
+        if (s.part !== p.part) continue;
+        if (b.some(q => q !== p && q.part === p.part && Math.hypot(q.x - s.x, q.y - s.y) < 6)) continue;
+        const d = Math.hypot(p.x - s.x, p.y - s.y);
+        if (d < bestD) { best = s; bestD = d; }
+    }
+    if (!best) return false;
+    Object.assign(p, { x: best.x, y: best.y, rot: (best.rot + 360) % 360, flip: best.flip, s: 1 });
+    return true;
+}
+function wireDrag(el, id) {
+    let drag = null;
+    el.addEventListener('pointerdown', e => {
+        if (e.button > 0) return;
+        const p = pieceOf(id); if (!p) return;
+        e.stopPropagation(); select(id);
+        drag = { px: e.clientX, py: e.clientY, x: p.x, y: p.y, snap: JSON.stringify(board()), moved: false };
+        el.classList.add('drag');
+        try { el.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    el.addEventListener('pointermove', e => {
+        const p = drag && pieceOf(id); if (!p) return;
+        const dx = (e.clientX - drag.px) / view.u, dy = (e.clientY - drag.py) / view.u;
+        if (!drag.moved && Math.hypot(dx, dy) * view.u < 3) return;
+        drag.moved = true;
+        p.x = drag.x + dx; p.y = drag.y + dy; clampToStage(p); placeEl(el, p);
+    });
+    const end = e => {
+        if (!drag) return;
+        const d = drag, p = pieceOf(id); drag = null;
+        el.classList.remove('drag');
+        try { el.releasePointerCapture(e.pointerId); } catch (_) {}
+        if (!d.moved || !p) return;
+        remember(d.snap);
+        if (S.level === 'easy' && trySnap(p)) { placeEl(el, p); SFX.snap(); } else SFX.drop();
+        changed(false);
+    };
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+}
+
+// ---------- checking the picture ----------
+const median = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[s.length >> 1] : 0; };
+function checkBoard() {
+    const m = M(), b = board();
+    const missing = m.parts.map(part => ({ part, n: part.need - b.filter(p => p.part === part.id).length })).filter(x => x.n > 0);
+    // The picture may be built anywhere on the stage: line it up using the one-of-a-kind shapes.
+    const dxs = [], dys = [];
+    m.slots.forEach(s => {
+        if (m.byId[s.part].need !== 1) return;
+        const p = b.find(q => q.part === s.part);
+        if (p) { dxs.push(p.x - s.x); dys.push(p.y - s.y); }
+    });
+    const ox = median(dxs), oy = median(dys), used = new Set();
+    let open = 0;
+    m.slots.forEach(s => {
+        const part = m.byId[s.part], tol = Math.min(30, 14 + 0.15 * Math.max(part.w, part.h));
+        let best = null, bestD = tol;
+        b.forEach(p => {
+            if (p.part !== s.part || used.has(p.id)) return;
+            const d = Math.hypot(p.x - ox - s.x, p.y - oy - s.y);
+            if (d <= bestD) { best = p; bestD = d; }
+        });
+        best ? used.add(best.id) : open++;
+    });
+    return { missing, open, loose: b.filter(p => !used.has(p.id)).map(p => p.id) };
+}
+function done() {
+    deselect();
+    if (!board().length) { toast('Add some shapes first!'); SFX.oops(); return; }
+    const r = checkBoard();
+    if (r.missing.length) {
+        const list = r.missing.slice(0, 2).map(x => `${x.n} ${x.part.name}${x.n > 1 ? 's' : ''}`).join(' and ');
+        toast(`Keep going! You still need ${list}${r.missing.length > 2 ? ' and more' : ''}.`, 4200);
+        SFX.oops(); return;
+    }
+    if (r.open) {
+        toast(`So close! Move the wiggling shape${r.loose.length === 1 ? '' : 's'} to match the picture.`, 4200);
+        r.loose.forEach(id => { const el = elOf(id); if (el) { el.classList.add('wiggle'); setTimeout(() => el.classList.remove('wiggle'), 1600); } });
+        SFX.oops(); return;
+    }
+    SFX.fanfare(); confetti();
+    toast(`🎉 You built the ${M().label}! Happy Thanksgiving!`, 2600);
+    setTimeout(askCount, 1700);
+}
+// Math question after a finished picture.
+function askCount() {
+    const m = M(), counts = {};
+    m.slots.forEach(s => { const k = m.byId[s.part].kind; counts[k] = (counts[k] || 0) + 1; });
+    const kinds = Object.keys(counts).filter(k => counts[k] >= 2 && !(k === 'rectangle' && counts.square));
+    const kind = kinds[Math.floor(Math.random() * kinds.length)], answer = counts[kind];
+    const opts = new Set([answer]);
+    while (opts.size < 4) { const n = answer + Math.floor(Math.random() * 6) - 2; if (n > 0) opts.add(n); }
+    const glow = on => board().forEach(p => { const el = elOf(p.id); if (el) el.classList.toggle('count', on && m.byId[p.part].kind === kind); });
+    glow(true);
+    const ask = note => openModal(`How many ${KIND[kind].plural} are in your ${m.label}?`,
+        note || `Count the glowing shapes. A ${kind} is ${KIND[kind].fact}.`,
+        [...opts].sort((a, b) => a - b).map(n => ({
+            label: String(n), cls: 'num', keep: true,
+            on: () => {
+                if (n !== answer) { SFX.oops(); ask('Not quite. Count the glowing shapes one more time!'); return; }
+                SFX.fanfare(); glow(false);
+                openModal(`Yes! ${answer} ${KIND[kind].plural}.`, 'Great counting. Save your picture or try another one!',
+                    [{ label: '📸 Save picture', cls: 'go', on: savePicture }, { label: 'Keep building' }]);
+            }
+        })), () => glow(false));
+    ask();
+}
+
+// ---------- dialogs, toast, confetti ----------
+let modalClose = null;
+function openModal(title, text, buttons, onClose) {
+    $('modal-title').textContent = title; $('modal-text').textContent = text;
+    const box = $('modal-choices'); box.innerHTML = '';
+    if (onClose) modalClose = onClose;
+    buttons.forEach(b => {
+        const el = document.createElement('button');
+        el.className = 'btn ' + (b.cls || ''); el.textContent = b.label;
+        el.addEventListener('click', () => { if (!b.keep) closeModal(); if (b.on) b.on(); });
+        box.appendChild(el);
+    });
+    $('modal').hidden = false;
+    box.firstChild.focus();
+}
+function closeModal() { $('modal').hidden = true; if (modalClose) { const f = modalClose; modalClose = null; f(); } }
+let toastTimer = null;
+function toast(msg, ms = 2400) {
+    const t = $('toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, ms);
+}
+function confetti() {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const c = $('confetti'), w = c.width = c.clientWidth, h = c.height = c.clientHeight, ctx = c.getContext('2d');
+    const colors = ['#F97316', '#EAB308', '#DC2626', '#0D9488', '#7C2D12'];
+    const bits = Array.from({ length: 110 }, () => ({
+        x: w / 2, y: h * 0.6, vx: (Math.random() - 0.5) * 16, vy: -Math.random() * 15 - 4,
+        r: Math.random() * 6 + 4, a: Math.random() * 6, c: colors[Math.floor(Math.random() * colors.length)], tri: Math.random() < 0.5
+    }));
+    let frame = 0;
+    (function step() {
+        ctx.clearRect(0, 0, w, h);
+        bits.forEach(b => {
+            b.x += b.vx; b.y += b.vy; b.vy += 0.45; b.vx *= 0.99; b.a += 0.2;
+            ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.a); ctx.fillStyle = b.c; ctx.globalAlpha = Math.max(0, 1 - frame / 110);
+            if (b.tri) { ctx.beginPath(); ctx.moveTo(0, -b.r); ctx.lineTo(b.r, b.r); ctx.lineTo(-b.r, b.r); ctx.fill(); } else ctx.fillRect(-b.r / 2, -b.r / 2, b.r, b.r);
+            ctx.restore();
+        });
+        if (++frame < 110) requestAnimationFrame(step); else ctx.clearRect(0, 0, w, h);
+    })();
+}
+
+// ---------- save a picture ----------
+const esc = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+async function savePicture() {
+    deselect();
+    const m = M(), b = board();
+    if (!b.length) { toast('Add some shapes first, then save!'); return; }
+    let x0 = 0, y0 = 0, x1 = m.W, y1 = m.H;
+    b.forEach(p => {
+        const part = m.byId[p.part], r = Math.max(part.w, part.h) * p.s / 2 + 4;
+        x0 = Math.min(x0, p.x - r); y0 = Math.min(y0, p.y - r); x1 = Math.max(x1, p.x + r); y1 = Math.max(y1, p.y + r);
+    });
+    x0 -= 16; y0 -= 16; x1 += 16; y1 += 46;
+    const w = x1 - x0, h = y1 - y0, name = S.name.trim();
+    const caption = name ? `${m.label} by ${name}` : `My Shape ${m.label}`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${x0} ${y0} ${w} ${h}">` +
+        `<defs><radialGradient id="g" cx="50%" cy="45%" r="75%"><stop offset="0" stop-color="#FFFBEB"/><stop offset=".65" stop-color="#FDE68A"/><stop offset="1" stop-color="#FCD34D"/></radialGradient></defs>` +
+        `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="url(#g)"/>${boardSVG(S.mode, b)}` +
+        `<text x="${x0 + w / 2}" y="${y1 - 14}" text-anchor="middle" font-family="Trebuchet MS, Arial, sans-serif" font-weight="bold" font-size="18" fill="#451A03">${esc(caption)}</text></svg>`;
+    try {
+        const img = new Image();
+        await new Promise((ok, bad) => { img.onload = ok; img.onerror = bad; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); });
+        const k = 3, cv = document.createElement('canvas');
+        cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        const blob = await new Promise(ok => cv.toBlob(ok, 'image/png'));
+        const safe = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const filename = `${safe ? safe + '-' : 'my-'}shape-${S.mode}.png`;
+        const dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
+        if (dl) {
+            await dl.save({ filename, data: blob });
+        } else {
+            const a = document.createElement('a');
+            a.download = filename; a.href = URL.createObjectURL(blob);
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        }
+        SFX.fanfare(); toast('✅ Picture saved!');
+    } catch (err) {
+        if (err && err.code === 'declined') toast('Okay, not saved.');
+        else toast('Saving is not available here. Ask your teacher for help.', 4000);
+    }
+}
+
+// ---------- modes, levels, the Copy This card ----------
+function buildTray() {
+    const m = M(), box = $('parts');
+    box.innerHTML = '';
+    $('tray-title').textContent = `${m.emoji} ${m.label} shapes`;
+    m.parts.forEach(part => {
+        const v = Math.max(part.w, part.h, 44) + 8;
+        const card = document.createElement('button');
+        card.className = 'part'; card.id = 'part-' + part.id;
+        card.innerHTML = `<svg viewBox="${-v / 2} ${-v / 2} ${v} ${v}">${part.svg}</svg><span class="nm">${part.name}</span><span class="left"></span>`;
+        card.addEventListener('click', () => addPart(part));
+        box.appendChild(card);
+    });
+}
+function setMode(mode, quiet) {
+    S.mode = mode; sel = null;
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-pressed', String(t.dataset.mode === mode)));
+    $('target-pic').innerHTML = targetSVG(mode);
+    $('ghost').innerHTML = targetSVG(mode);
+    buildTray(); layout(); renderPieces(); applyLevel(); persist();
+    if (!quiet) SFX.pop();
+}
+function applyLevel() {
+    document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.level === S.level)));
+    $('level-tip').textContent = LEVELS[S.level];
+    $('btn-hint').hidden = S.level !== 'medium';
+    $('btn-peek').hidden = S.level !== 'hard';
+    $('hint-text').textContent = hintsOn ? 'Hide outline' : 'Show outline';
+    $('ghost').classList.toggle('on', S.level === 'easy' || (S.level === 'medium' && hintsOn));
+    clearTimeout(lookTimer); $('look-bar').hidden = true;
+    $('target').classList.remove('gone');
+    if (S.level === 'hard') look(10);
+}
+// Hard level: the picture shows for a few seconds, then hides.
+function look(seconds) {
+    const card = $('target'), bar = $('look-bar'), fill = bar.firstElementChild;
+    clearTimeout(lookTimer);
+    card.classList.remove('gone', 'min'); bar.hidden = false;
+    if (fill.animate) fill.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: seconds * 1000, fill: 'forwards' });
+    lookTimer = setTimeout(() => { card.classList.add('gone'); bar.hidden = true; }, seconds * 1000);
+}
+
+// ---------- wiring ----------
+function init() {
+    document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => setMode(t.dataset.mode)));
+    document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+        S.level = b.dataset.level; applyLevel(); persist(); SFX.pop();
+        toast(b.textContent + ': ' + LEVELS[S.level]);
+    }));
+    $('btn-hint').addEventListener('click', () => { hintsOn = !hintsOn; applyLevel(); SFX.pop(); });
+    $('btn-peek').addEventListener('click', () => { look(5); SFX.pop(); });
+    $('btn-undo').addEventListener('click', undo);
+    $('btn-done').addEventListener('click', done);
+    $('btn-save').addEventListener('click', savePicture);
+    $('btn-reset').addEventListener('click', () => {
+        if (!board().length) { toast('The board is already empty.'); return; }
+        openModal('Clear the whole board?', 'All your shapes will go back in the tray.', [
+            { label: 'Yes, clear it', cls: 'stop', on: () => { remember(); S.boards[S.mode] = []; sel = null; changed(true); SFX.del(); toast('Board cleared. Tap Undo to bring it back.'); } },
+            { label: 'Keep building', cls: 'go' }
+        ]);
+    });
+    const snd = $('btn-sound'), paintSound = () => { snd.textContent = S.sound ? '🔊' : '🔇'; snd.setAttribute('aria-pressed', String(S.sound)); };
+    snd.addEventListener('click', () => { S.sound = !S.sound; paintSound(); persist(); toast(S.sound ? 'Sound on' : 'Sound off'); SFX.pop(); });
+    paintSound();
+    $('btn-zoom').addEventListener('click', () => { $('target').classList.remove('min'); $('target').classList.toggle('big'); layout(); });
+    $('btn-min').addEventListener('click', () => { $('target').classList.toggle('min'); layout(); });
+    $('tools').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) act(b.dataset.act); });
+    $('tools').addEventListener('pointerdown', e => e.stopPropagation());
+    $('target').addEventListener('pointerdown', e => e.stopPropagation());
+    $('stage').addEventListener('pointerdown', deselect);
+    $('modal').addEventListener('pointerdown', e => { if (e.target === $('modal')) closeModal(); });
+    const nm = $('name-input');
+    nm.value = S.name;
+    nm.addEventListener('input', () => { S.name = nm.value; persist(); });
+
+    const firstGesture = () => { hadGesture = true; };
+    window.addEventListener('pointerdown', firstGesture, true);
+    window.addEventListener('keydown', firstGesture, true);
+    window.addEventListener('keydown', e => {
+        if (!$('modal').hidden) { if (e.key === 'Escape') closeModal(); return; }
+        if (e.target.matches && e.target.matches('input, textarea')) return;
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
+        if (sel == null || e.ctrlKey || e.metaKey || e.altKey) return;
+        const step = e.shiftKey ? 10 : 2;
+        const keys = {
+            ArrowLeft: () => nudge(-step, 0), ArrowRight: () => nudge(step, 0), ArrowUp: () => nudge(0, -step), ArrowDown: () => nudge(0, step),
+            Delete: () => act('del'), Backspace: () => act('del'), Escape: deselect,
+            r: () => act('rotR'), R: () => act('rotL'), f: () => act('flip'), F: () => act('flip'),
+            '+': () => act('bigger'), '=': () => act('bigger'), '-': () => act('smaller'), ']': () => act('front'), '[': () => act('back')
+        };
+        if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
+    });
+    if (window.ResizeObserver) new ResizeObserver(layout).observe($('stage')); else window.addEventListener('resize', layout);
+    setMode(S.mode, true);
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+</script>
+
+</body></html>
